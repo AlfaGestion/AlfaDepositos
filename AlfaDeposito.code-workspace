@@ -7,5 +7,7 @@
 			"path": "../wsAlfa"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"powershell.cwd": "wsAlfa"
+	}
 }

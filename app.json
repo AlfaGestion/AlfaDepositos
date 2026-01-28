@@ -19,14 +19,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "runtimeVersion": {
-        "policy": "sdkVersion"
-      }
+      "runtimeVersion": "1.3.0"
     },
     "android": {
-      "runtimeVersion": {
-        "policy": "sdkVersion"
-      },
+      "runtimeVersion": "1.3.0",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
@@ -38,9 +34,14 @@
     },
     "extra": {
       "eas": {
-        "projectId": "5d4cb03e-0cf0-4b0a-826a-92f7decbea1f"
+        "projectId": "c0965618-74d0-4f46-b7a8-f7407e9fab9c"
       }
     },
-    "owner": "aletmnt"
+    "owner": "albertofavioantunez",
+    "plugins": [
+      "@react-native-community/datetimepicker",
+      "expo-build-properties",
+      "expo-sqlite"
+    ]
   }
 }

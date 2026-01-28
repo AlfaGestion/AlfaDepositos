@@ -1,11 +1,11 @@
-import * as SQLite from "expo-sqlite";
+import SQLite from "@db/SQLiteCompat";
 import DatabaseLayer from "expo-sqlite-orm/src/DatabaseLayer";
 
 import Configuration from "@db/Configuration";
 
 function bulkInsert(table, items) {
   const databaseLayer = new DatabaseLayer(async () => SQLite.openDatabase("alfadeposito.db"), table);
-  databaseLayer.bulkInsertOrReplace(items).then((response) => {});
+  return databaseLayer.bulkInsertOrReplace(items);
 }
 
 async function existsDB() {

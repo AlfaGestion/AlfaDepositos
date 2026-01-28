@@ -7,7 +7,6 @@ import AccountBalanceScreen from "@screens/Accounts/AccountBalanceScreen";
 import AccountScreen from "@screens/Accounts/AccountScreen";
 import AccountsScreen from "@screens/Accounts/AccountsScreen";
 import HomeScreen from "@screens/homeScreen";
-import LoginScreen from "@screens/LoginScreen";
 import ListOrdersScreen from "@screens/Orders/listOrdersScreen";
 import NewOrderScreen from "@screens/Orders/newOrderScreen";
 import NewStockScreen from "@screens/Orders/newStockScreen";
@@ -38,16 +37,12 @@ const HomeStack = () => (
   <NavigationContainer>
     <CartProvider>
       <Stack.Navigator
+        initialRouteName="HomeScreen"
         screenOptions={{
           headerTintColor: "#444",
           headerStyle: { backgroundColor: "#e1e1e1" },
         }}
       >
-        <Stack.Screen
-          name="LoginScreen"
-          component={LoginScreen}
-          options={{ title: "Login", headerShown: false }}
-        />
         <Stack.Screen
           name="HomeScreen"
           component={HomeScreen}

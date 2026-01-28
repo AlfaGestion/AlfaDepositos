@@ -24,6 +24,27 @@ export default function LoginScreen({ navigation }) {
     fetchSession();
   }, [navigation]);
 
+  async function getAutoUser() {
+    try {
+      const sellers = await Seller.query({ limit: 1, page: 1 });
+      if (sellers && sellers.length > 0) {
+        const seller = sellers[0];
+        return {
+          user: seller.code,
+          password: seller.password || "",
+          name: seller.name || "",
+        };
+      }
+    } catch (e) {
+      // Ignore and fall back to defaults
+    }
+    return {
+      user: "1",
+      password: "",
+      name: "Vendedor",
+    };
+  }
+
   async function fetchSession() {
     //Primero verifico que exista la base de datos.
     let exists = false;
@@ -40,6 +61,10 @@ export default function LoginScreen({ navigation }) {
     const response = await getUser();
 
     if (response == null) {
+      const autoUser = await getAutoUser();
+      loginAction({ type: "sign", data: autoUser });
+      await Configuration.setConfigValue("TOKEN", "");
+      navigation.navigate("HomeScreen");
       return;
     }
 

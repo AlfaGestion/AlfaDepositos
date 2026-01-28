@@ -1,4 +1,4 @@
-import * as SQLite from "expo-sqlite";
+import SQLite from "@db/SQLiteCompat";
 const db = SQLite.openDatabase("alfadeposito.db");
 
 const getTasks = async () => {

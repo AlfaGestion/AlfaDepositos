@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, FlatList, Text, TextInput, View, StyleSheet, Modal as RNModal } from "react-native";
 import { TouchableOpacity } from "react-native-gesture-handler";
-import { BarCodeScanner } from 'expo-barcode-scanner'; // Importar escáner
+import { CameraView, useCameraPermissions } from "expo-camera"; // Importar escáner
 import { BiCamera } from "react-icons/bi"; // O usa un icono de tu librería
 
 // ... tus otros imports
@@ -18,7 +18,8 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '' }) {
     const [isModalVisible, setIsModalVisible] = useState(false);
     
     // Estados para el Escáner
-    const [hasPermission, setHasPermission] = useState(null);
+    const [permission, requestPermission] = useCameraPermissions();
+    const hasPermission = permission?.granted ?? false;
     const [scannerVisible, setScannerVisible] = useState(false);
 
     const [productSearchText, setProductSearchText] = useState("");
@@ -31,11 +32,6 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '' }) {
 
     // 1. Solicitar permisos de cámara
     useEffect(() => {
-        const getBarCodeScannerPermissions = async () => {
-            const { status } = await BarCodeScanner.requestPermissionsAsync();
-            setHasPermission(status === 'granted');
-        };
-        getBarCodeScannerPermissions();
         loadProducts();
     }, []);
 
@@ -98,8 +94,8 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '' }) {
             {/* Modal de la Cámara */}
             <RNModal visible={scannerVisible} animationType="slide">
                 <View style={styles.scannerContainer}>
-                    <BarCodeScanner
-                        onBarCodeScanned={scannerVisible ? handleBarCodeScanned : undefined}
+                    <CameraView
+                        onBarcodeScanned={scannerVisible ? handleBarCodeScanned : undefined}
                         style={StyleSheet.absoluteFillObject}
                     />
                     <View style={styles.overlay}>
