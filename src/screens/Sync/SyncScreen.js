@@ -14,14 +14,9 @@ import OrderDetail from "@db/OrderDetail";
 import Payment from "@db/Payment";
 import PaymentInvoices from "@db/PaymentInvoices";
 import PaymentMethods from "@db/PaymentMethods";
-import PaymentMethod from "@db/PaymentMethod";
 import Product from "@db/Product";
-import Seller from "@db/Seller";
 import Location from "@db/Location";
-import Service from "@db/Service";
 import Task from "@db/Task";
-import Visit from "@db/Visit";
-import VisitDetails from "@db/VisitDetails";
 import { getDataFromAPI } from "@libraries/api";
 
 import iconSync from "@icons/sync.png";
@@ -54,6 +49,16 @@ export default function SyncScreen({ navigation, route }) {
   const [showLoaderClientes, setShowLoaderClientes] = useState(true);
   const [showLoaderArticulos, setShowLoaderArticulos] = useState(true);
   const [showLoaderArticulosListas, setShowLoaderArticulosListas] = useState(true);
+  const [statusMessage, setStatusMessage] = useState("");
+
+  const REQUEST_TIMEOUT_MS = 20000;
+  const fetchWithTimeout = async (endpoint, message) => {
+    setStatusMessage(message);
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`Timeout en ${endpoint}`)), REQUEST_TIMEOUT_MS)
+    );
+    return await Promise.race([getDataFromAPI(endpoint), timeout]);
+  };
 
   const createTables = async () => {
     // await Payment.dropTable();
@@ -67,28 +72,31 @@ export default function SyncScreen({ navigation, route }) {
     await PaymentMethods.createTable();
     await PaymentInvoices.createTable();
 
-    await PaymentMethod.createTable();
     await Product.createTable();
     await ProductLista.createTable();
-    await Seller.createTable();
-    await Service.createTable();
     // await Task.dropTable();
     await Task.createTable();
-    await Visit.createTable();
-    await VisitDetails.createTable();
   };
 
   async function syncData() {
     setShowButtonSync(false);
 
+    try {
     await createTables();
+
+    // Omitidos de la sincronizacion
+    setShowLoaderVendedor(false);
+    setShowLoaderPayments(false);
+    setShowLoaderServices(false);
+    setShowLoaderDatosVisita(false);
+    setShowLoaderArticulosListas(false);
 
     let props = {};
     let objectArray = [];
     let data;
 
     //Configuración del vendedor
-    data = await getDataFromAPI(`seller/config/${login.user.user ?? "1"}`);
+    data = await fetchWithTimeout(`seller/config/${login.user.user ?? "1"}`, "Sincronizando configuracion...");
 
     if (!data.error) {
       data.data.map((item) => {
@@ -105,7 +113,7 @@ export default function SyncScreen({ navigation, route }) {
     // Category.createTable();
     Category.destroyAll();
 
-    data = await getDataFromAPI("category/");
+    data = await fetchWithTimeout("category/", "Sincronizando rubros...");
 
     if (!data.error) {
       data.data.map((item) => {
@@ -129,7 +137,7 @@ export default function SyncScreen({ navigation, route }) {
 
     objectArray = [];
 
-    data = await getDataFromAPI("family/");
+    data = await fetchWithTimeout("family/", "Sincronizando familias...");
     if (!data.error) {
       data.data.map((item) => {
         props = {
@@ -146,113 +154,12 @@ export default function SyncScreen({ navigation, route }) {
       return;
     }
 
-    //Vendedores
-    // Seller.createTable();
-    Seller.destroyAll();
-    objectArray = [];
-    data = await getDataFromAPI("seller/");
-    if (!data.error) {
-      data.data.map((item) => {
-        props = {
-          code: item.idvendedor,
-          name: item.nombre,
-          password: item.clave,
-        };
-        objectArray.push(props);
-      });
-
-      bulkInsert("sellers", objectArray);
-      updateStatus("vendedores");
-    } else {
-      setErrorSync(data.message);
-      return;
-    }
-
-    //Medios de Pago
-    // PaymentMethod.createTable();
-    PaymentMethod.destroyAll();
-    objectArray = [];
-
-    data = await getDataFromAPI("cashbox/medios_pago");
-    if (!data.error) {
-      data.data.map((item) => {
-        props = {
-          code: item.codigo,
-          name: item.descripcion,
-        };
-        objectArray.push(props);
-      });
-
-      bulkInsert("payments_methods", objectArray);
-      updateStatus("mediosPago");
-    } else {
-      setErrorSync(data.message);
-      return;
-    }
-
-    //Servicios
-    // Service.createTable();
-    Service.destroyAll();
-    objectArray = [];
-
-    data = await getDataFromAPI("service/");
-    if (!data.error) {
-      data.data.map((item) => {
-        props = {
-          code: item.codigo,
-          name: item.descripcion,
-        };
-        objectArray.push(props);
-      });
-
-      bulkInsert("services", objectArray);
-      updateStatus("servicios");
-    } else {
-      setErrorSync(data.message);
-      return;
-    }
-
-    //Visitas getVisitasVendedor/codvdor/coddia
-    const dayNumber = new Date().getDay();
-
-    // Visit.dropTable();
-    // Visit.createTable();
-    Visit.destroyAll();
-    // VisitDetails.destroyAll();
-    objectArray = [];
-
-    data = await getDataFromAPI(`seller/visitas/${login.user.user ?? "1"}/${dayNumber}`);
-    if (!data.error) {
-      data.data.map((item) => {
-        props = {
-          account: item.cliente,
-          name: item.nombre,
-          obs: item.observaciones,
-          monday: item.lunes,
-          tuesday: item.martes,
-          wednesday: item.miercoles,
-          thursday: item.jueves,
-          friday: item.viernes,
-          saturday: item.sabado,
-          sunday: item.domingo,
-          order_visit: item.orden,
-        };
-        objectArray.push(props);
-      });
-
-      bulkInsert("visits", objectArray);
-      updateStatus("visitas");
-    } else {
-      setErrorSync(data.message);
-      return;
-    }
-
     //Proveedores
     Account.destroyAll();
     let pages = 50;
 
     for (let page = 1; page <= pages; page++) {
-      data = await getDataFromAPI(`account/paginate/${page}`);
+      data = await fetchWithTimeout(`account/paginate/${page}`, `Sincronizando proveedores (pagina ${page})...`);
 
       objectArray = [];
       if (!data.error) {
@@ -296,7 +203,7 @@ export default function SyncScreen({ navigation, route }) {
     pages = 150;
 
     for (let page = 1; page <= pages; page++) {
-      data = await getDataFromAPI(`product/paginate/${page}`);
+      data = await fetchWithTimeout(`product/paginate/${page}`, `Sincronizando articulos (pagina ${page})...`);
 
       objectArray = [];
       if (!data.error) {
@@ -339,51 +246,11 @@ export default function SyncScreen({ navigation, route }) {
     updateStatus("articulos");
 
 
-    //Listas de precios
-    ProductLista.destroyAll();
-    pages = 150;
-
-    for (let page = 1; page <= pages; page++) {
-      data = await getDataFromAPI(`product/paginate/listas/${page}`);
-
-      objectArray = [];
-      if (!data.error) {
-        if (Object.keys(data.data).length == 0) {
-          updateStatus("articulos_listas");
-          break;
-        } else {
-          data.data.map((item) => {
-            props = {
-              code: item.idarticulo,
-              codigoBarras: item?.codigobarras,
-              name: item.descripcion,
-              lista: item.lista,
-              price1: item.precio1,
-              price2: item.precio2,
-              price3: item.precio3,
-              price4: item.precio4,
-              price5: item.precio5,
-              price6: item.precio6,
-              price7: item.precio7,
-              price8: item.precio8,
-              price9: item.precio9,
-              price10: item.precio10,
-              cant_propuesta: item?.cantidadpropuesta,
-            };
-
-            objectArray.push(props);
-          });
-        }
-        bulkInsert("products_listas", objectArray);
-      } else {
-        setErrorSync(data.message);
-        return;
-      }
-    }
-    updateStatus("articulos_listas");
-
     if (!errorSync) {
       setFinal(true);
+    }
+    } catch (e) {
+      setErrorSync(e?.message || "Error en la sincronizacion.");
     }
   }
 
@@ -458,16 +325,12 @@ export default function SyncScreen({ navigation, route }) {
         <Text style={[syncStyle.errorMessage]}>{errorSync}</Text>
       ) : (
         <ScrollView>
+          {statusMessage ? <Text style={[syncStyle.text]}>{statusMessage}</Text> : <Text></Text>}
           <SyncItem showLoader={showLoaderConfig} text="Configuración"></SyncItem>
           <SyncItem showLoader={showLoaderRubro} text="Rubros"></SyncItem>
           <SyncItem showLoader={showLoaderFamilia} text="Familias"></SyncItem>
-          <SyncItem showLoader={showLoaderVendedor} text="Vendedores"></SyncItem>
-          <SyncItem showLoader={showLoaderPayments} text="Medios de Pago"></SyncItem>
-          <SyncItem showLoader={showLoaderServices} text="Servicios"></SyncItem>
-          <SyncItem showLoader={showLoaderDatosVisita} text="Datos Visita"></SyncItem>
           <SyncItem showLoader={showLoaderClientes} text="Proveedores"></SyncItem>
           <SyncItem showLoader={showLoaderArticulos} text="Articulos"></SyncItem>
-          <SyncItem showLoader={showLoaderArticulosListas} text="Listas"></SyncItem>
         </ScrollView>
       )}
 
@@ -476,7 +339,7 @@ export default function SyncScreen({ navigation, route }) {
           <Text>Sincronización finalizada</Text>
           <TouchableOpacity
             style={[syncStyle.btnReturn]}
-            onPress={() => (firstIn ? navigation.navigate("LoginScreen") : navigation.navigate("HomeScreen"))}
+            onPress={() => navigation.navigate("HomeScreen")}
           >
             <Text style={[syncStyle.textBtnReturn]}>Regresar</Text>
           </TouchableOpacity>

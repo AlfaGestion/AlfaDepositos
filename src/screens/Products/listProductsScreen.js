@@ -11,7 +11,7 @@ import {
   Alert 
 } from "react-native";
 import SafeAreaView from "react-native-safe-area-view";
-import { BarCodeScanner } from 'expo-barcode-scanner';
+import { CameraView, useCameraPermissions } from "expo-camera";
 
 import ProductItem from "@components/ProductItem";
 import Product from "@db/Product"; // Tu modelo de base de datos
@@ -26,17 +26,14 @@ export default function Products({ navigation }) {
   const [searchText, setSearchText] = useState("");
 
   // Estados del Escáner
-  const [hasPermission, setHasPermission] = useState(null);
+  const [permission, requestPermission] = useCameraPermissions();
+  const hasPermission = permission?.granted ?? false;
   const [scannerVisible, setScannerVisible] = useState(false);
   
   const refInput = useRef();
 
   // 1. Permisos y Carga Inicial
   useEffect(() => {
-    (async () => {
-      const { status } = await BarCodeScanner.requestPermissionsAsync();
-      setHasPermission(status === 'granted');
-    })();
     loadProducts("", false); // Carga inicial de los primeros 20
   }, []);
 
@@ -96,8 +93,8 @@ export default function Products({ navigation }) {
       {/* --- MODAL DEL ESCÁNER --- */}
       <RNModal visible={scannerVisible} animationType="slide">
         <View style={styles.scannerContainer}>
-          <BarCodeScanner
-            onBarCodeScanned={scannerVisible ? handleBarCodeScanned : undefined}
+          <CameraView
+            onBarcodeScanned={scannerVisible ? handleBarCodeScanned : undefined}
             style={StyleSheet.absoluteFillObject}
           />
           <View style={styles.overlay}>
@@ -116,6 +113,7 @@ export default function Products({ navigation }) {
       <View style={[listProductsStyles.viewSearch, styles.searchRow]}>
         <TextInput
           ref={refInput}
+          autoFocus={true}
           style={[listProductsStyles.textSearch, { flex: 1 }]}
           onChangeText={onChangeSearchText}
           value={searchText}

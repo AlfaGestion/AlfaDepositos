@@ -18,41 +18,56 @@ import ItemsExclude from "../libraries/db/ItemsExclude";
 import Stock from "../libraries/db/Stock";
 
 export const restartTables = async () => {
-  await Payment.dropTable();
-  await Location.dropTable();
-  await Category.dropTable();
-  await Accounts.dropTable();
-  await Family.dropTable();
-  await Order.dropTable();
-  await OrderDetail.dropTable();
-  await PaymentInvoices.dropTable();
-  await PaymentMethods.dropTable();
-  await PaymentMethod.dropTable();
-  await Product.dropTable();
-  await ProductLista.dropTable();
-  await Service.dropTable();
-  await Task.dropTable();
-  await Visit.dropTable();
-  await VisitDetails.dropTable();
-  await ItemsExclude.dropTable();
-  await Stock.dropTable();
+  const drop = async (label, fn) => {
+    try {
+      await fn();
+    } catch (e) {
+      throw new Error(`Error al borrar ${label}: ${e?.message || e}`);
+    }
+  };
 
-  await Location.createTable();
-  await Category.createTable();
-  await Accounts.createTable();
-  await Family.createTable();
-  await Order.createTable();
-  await OrderDetail.createTable();
-  await Payment.createTable();
-  await PaymentMethod.createTable();
-  await Product.createTable();
-  await Service.createTable();
-  await Task.createTable();
-  await Visit.createTable();
-  await VisitDetails.createTable();
-  await PaymentInvoices.createTable();
-  await PaymentMethods.createTable();
-  await ItemsExclude.createTable();
-  await Stock.createTable();
+  const create = async (label, fn) => {
+    try {
+      await fn();
+    } catch (e) {
+      throw new Error(`Error al crear ${label}: ${e?.message || e}`);
+    }
+  };
 
+  await drop("Payment", () => Payment.dropTable());
+  await drop("Location", () => Location.dropTable());
+  await drop("Category", () => Category.dropTable());
+  await drop("Accounts", () => Accounts.dropTable());
+  await drop("Family", () => Family.dropTable());
+  await drop("Order", () => Order.dropTable());
+  await drop("OrderDetail", () => OrderDetail.dropTable());
+  await drop("PaymentInvoices", () => PaymentInvoices.dropTable());
+  await drop("PaymentMethods", () => PaymentMethods.dropTable());
+  await drop("PaymentMethod", () => PaymentMethod.dropTable());
+  await drop("Product", () => Product.dropTable());
+  await drop("ProductLista", () => ProductLista.dropTable());
+  await drop("Service", () => Service.dropTable());
+  await drop("Task", () => Task.dropTable());
+  await drop("Visit", () => Visit.dropTable());
+  await drop("VisitDetails", () => VisitDetails.dropTable());
+  await drop("ItemsExclude", () => ItemsExclude.dropTable());
+  await drop("Stock", () => Stock.dropTable());
+
+  await create("Location", () => Location.createTable());
+  await create("Category", () => Category.createTable());
+  await create("Accounts", () => Accounts.createTable());
+  await create("Family", () => Family.createTable());
+  await create("Order", () => Order.createTable());
+  await create("OrderDetail", () => OrderDetail.createTable());
+  await create("Payment", () => Payment.createTable());
+  await create("PaymentMethod", () => PaymentMethod.createTable());
+  await create("Product", () => Product.createTable());
+  await create("Service", () => Service.createTable());
+  await create("Task", () => Task.createTable());
+  await create("Visit", () => Visit.createTable());
+  await create("VisitDetails", () => VisitDetails.createTable());
+  await create("PaymentInvoices", () => PaymentInvoices.createTable());
+  await create("PaymentMethods", () => PaymentMethods.createTable());
+  await create("ItemsExclude", () => ItemsExclude.createTable());
+  await create("Stock", () => Stock.createTable());
 };

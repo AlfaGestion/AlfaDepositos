@@ -16,6 +16,7 @@ const ConfigStyles = StyleSheet.create({
     // width: "100%",
     textAlign: "center",
     marginTop: 40,
+    marginBottom: 30,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: Colors.DGREEN,

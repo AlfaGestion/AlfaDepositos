@@ -1,4 +1,4 @@
-import * as SQLite from "expo-sqlite";
+import SQLite from "@db/SQLiteCompat";
 import { BaseModel, types } from "expo-sqlite-orm";
 
 export default class Task extends BaseModel {

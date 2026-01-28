@@ -1,4 +1,4 @@
-import * as SQLite from "expo-sqlite";
+import SQLite from "@db/SQLiteCompat";
 import { BaseModel, types } from "expo-sqlite-orm";
 
 import Configuration from "@db/Configuration";

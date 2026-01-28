@@ -19,6 +19,7 @@ import { getUser } from "@storage/UserAsyncStorage";
 import Colors from "../styles/Colors";
 
 import Configuration from "@db/Configuration";
+import Seller from "@db/Seller";
 
 // import * as TaskManager from "expo-task-manager";
 // import * as Location from "expo-location";
@@ -129,6 +130,7 @@ export default function Home({ navigation }) {
   const [menuData, setMenuData] = useState([]);
 
   useEffect(() => {
+    ensureAutoLogin();
     loadSellerConfig();
     // checkStatusAsync();
   }, [navigation]);
@@ -146,26 +148,60 @@ export default function Home({ navigation }) {
   // };
 
   const loadSellerConfig = async () => {
-    const data = await Configuration.getConfig("PERMITE_COBRANZAS");
-    let newData;
-    if (data.length > 0) {
-      if (data[0].value == 0) {
-        newData = DATA.filter((item) => item.id !== PAYMENT_ID);
+    try {
+      const data = await Configuration.getConfig("PERMITE_COBRANZAS");
+      let newData;
+      if (data.length > 0) {
+        if (data[0].value == 0) {
+          newData = DATA.filter((item) => item.id !== PAYMENT_ID);
+        } else {
+          newData = DATA;
+        }
       } else {
         newData = DATA;
       }
-    } else {
-      newData = DATA;
+
+      setMenuData(newData);
+    } catch (e) {
+      setMenuData(DATA);
+    }
+  };
+
+  const ensureAutoLogin = async () => {
+    if (login?.logged) {
+      return;
     }
 
-    setMenuData(newData);
+    const stored = await getUser();
+    if (stored) {
+      loginAction({ type: "sign-in", data: stored });
+      return;
+    }
+
+    let autoUser = { user: "1", password: "", name: "Vendedor" };
+    try {
+      const sellers = await Seller.query({ limit: 1, page: 1 });
+      if (sellers && sellers.length > 0) {
+        const seller = sellers[0];
+        autoUser = {
+          user: seller.code,
+          password: seller.password || "",
+          name: seller.name || "",
+        };
+      }
+    } catch (e) {
+      // Ignore and fall back to defaults
+    }
+
+    loginAction({ type: "sign", data: autoUser });
+    await Configuration.setConfigValue("TOKEN", "");
   };
 
   const logOut = async () => {
     const response = await getUser();
 
     loginAction({ type: "sign-out", data: response });
-    navigation.navigate("LoginScreen");
+    navigation.navigate("HomeScreen");
   };
 
   const Item = (props) => (

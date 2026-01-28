@@ -68,7 +68,13 @@ export default function ConfigurationScreen({ navigation, route }) {
     let values = [];
     setSaving(true);
 
-    await Configuration.destroyAll();
+    try {
+      await Configuration.destroyAll();
+    } catch (e) {
+      setSaving(false);
+      setShowText(e?.message || "Error al borrar configuración.");
+      return;
+    }
 
     let props = {};
 
@@ -80,9 +86,14 @@ export default function ConfigurationScreen({ navigation, route }) {
       values.push(props);
     }
 
-    bulkInsert("config", values);
-    setSaving(false);
-    setShowText("Grabado correctamente");
+    try {
+      await await bulkInsert("config", values);
+      setShowText("Grabado correctamente");
+    } catch (e) {
+      setShowText(e?.message || "Error al grabar configuración.");
+    } finally {
+      setSaving(false);
+    }
 
     if (firstIn) {
       if (
@@ -120,8 +131,13 @@ export default function ConfigurationScreen({ navigation, route }) {
 
   const handleDeleteTables = async () => {
     setDeleting(true);
-    await restartTables();
-    setDeleting(false);
+    try {
+      await restartTables();
+    } catch (e) {
+      Alert.alert("Error", e?.message || "No se pudieron reiniciar las tablas.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const showAlert = () =>

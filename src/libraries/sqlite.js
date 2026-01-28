@@ -1,4 +1,4 @@
-import * as SQLite from "expo-sqlite";
+import SQLite from "@db/SQLiteCompat";
 import { Platform } from "react-native";
 
 function openDatabase() {
@@ -12,7 +12,7 @@ function openDatabase() {
     };
   }
 
-  const db = SQLite.openDatabase("alfadeposito.db", "1");
+  const db = SQLite.openDatabase("alfadeposito.db");
   createDatabase(db);
   return db;
 }
