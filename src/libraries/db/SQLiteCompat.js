@@ -7,8 +7,13 @@ const wrapDatabase = (name, options, directory) => ({
       await db.withTransactionAsync(async () => {
         const pending = [];
         const tx = {
+<<<<<<< HEAD
           executeSql: (sql, params = [], onSuccess, onError) => {
             const run = (async () => {
+=======
+          executeSql: async (sql, params = [], onSuccess, onError) => {
+            const exec = (async () => {
+>>>>>>> ca358da7a64424592bcf118f3a6b38b702af56d6
               try {
                 const stmt = await db.prepareAsync(sql);
                 const result = await stmt.executeAsync(...params);
@@ -35,6 +40,7 @@ const wrapDatabase = (name, options, directory) => ({
                 throw e;
               }
             })();
+<<<<<<< HEAD
             pending.push(run);
             return run;
           },
@@ -42,6 +48,18 @@ const wrapDatabase = (name, options, directory) => ({
         await fn(tx);
         if (pending.length) {
           await Promise.allSettled(pending);
+=======
+            pending.push(exec);
+            return exec;
+          },
+        };
+        const maybePromise = fn(tx);
+        if (maybePromise && typeof maybePromise.then === "function") {
+          await maybePromise;
+        }
+        if (pending.length) {
+          await Promise.all(pending);
+>>>>>>> ca358da7a64424592bcf118f3a6b38b702af56d6
         }
       });
       if (success) {

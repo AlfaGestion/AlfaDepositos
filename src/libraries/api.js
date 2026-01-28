@@ -10,11 +10,11 @@ export async function getApiConfig() {
   const ALFA_DATABASE_ID = data.find((item) => item.key == "ALFA_DATABASE_ID");
 
   return [
-    API_URI.value,
-    ALFA_ACCOUNT.value,
-    PASSWORD_SYNC.value,
-    USERNAME_SYNC.value,
-    ALFA_DATABASE_ID.value,
+    API_URI?.value || "",
+    ALFA_ACCOUNT?.value || "",
+    PASSWORD_SYNC?.value || "",
+    USERNAME_SYNC?.value || "",
+    ALFA_DATABASE_ID?.value || "",
   ];
 }
 
@@ -114,6 +114,12 @@ const getToken = async () => {
   }
 };
 
+const buildUrl = (base, uri) => {
+  const normalizedBase = base.endsWith("/") ? base : `${base}/`;
+  const normalizedUri = uri.startsWith("/") ? uri.slice(1) : uri;
+  return `${normalizedBase}${normalizedUri}`;
+};
+
 export const Get = async (uri, token = "") => {
   const [API_URI] = await getApiConfig();
 
@@ -130,7 +136,9 @@ export const Get = async (uri, token = "") => {
       };
     }
 
-    const response = await fetch(`${API_URI}${uri}`, {
+    const url = buildUrl(API_URI, uri);
+    console.log("[API][GET]", url);
+    const response = await fetch(url, {
       method: "GET",
       headers: headers,
     });
@@ -163,7 +171,9 @@ export const Post = async (uri, payload, token = "") => {
       };
     }
 
-    const response = await fetch(`${API_URI}${uri}`, {
+    const url = buildUrl(API_URI, uri);
+    console.log("[API][POST]", url);
+    const response = await fetch(url, {
       method: "POST",
       body: payload,
       headers: headers,
