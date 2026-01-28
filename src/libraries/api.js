@@ -1,7 +1,15 @@
 import Configuration from "@db/Configuration";
 
+const withTimeout = (promise, ms, label) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`Timeout en ${label}`)), ms)
+    ),
+  ]);
+
 export async function getApiConfig() {
-  const data = await Configuration.getConfigAPI();
+  const data = await withTimeout(Configuration.getConfigAPI(), 5000, "getApiConfig");
 
   const API_URI = data.find((item) => item.key == "API_URI");
   const ALFA_ACCOUNT = data.find((item) => item.key == "ALFA_ACCOUNT");
@@ -9,13 +17,17 @@ export async function getApiConfig() {
   const USERNAME_SYNC = data.find((item) => item.key == "USERNAME_SYNC");
   const ALFA_DATABASE_ID = data.find((item) => item.key == "ALFA_DATABASE_ID");
 
-  return [
+  const config = [
     API_URI?.value || "",
     ALFA_ACCOUNT?.value || "",
     PASSWORD_SYNC?.value || "",
     USERNAME_SYNC?.value || "",
     ALFA_DATABASE_ID?.value || "",
   ];
+  if (!config[0]) {
+    console.log("[API] API_URI vacio en getApiConfig");
+  }
+  return config;
 }
 
 export const setDataToApi = async (endpoint, payload) => {
@@ -54,9 +66,16 @@ export const setDataToApi = async (endpoint, payload) => {
 };
 
 export const getDataFromAPI = async (endpoint, payload = null, method = "GET") => {
-  let TOKEN = await Configuration.getConfigValue("TOKEN");
+  console.log("[API] getDataFromAPI", method, endpoint);
+  let TOKEN;
+  try {
+    TOKEN = await withTimeout(Configuration.getConfigValue("TOKEN"), 5000, "getConfigValue(TOKEN)");
+  } catch (e) {
+    return errorResponse(e?.message || "Error al leer TOKEN.");
+  }
 
   if (TOKEN == "") {
+    console.log("[API] token vacio, solicitando token");
     //Obtener el token para sincronizar
     const dataToken = await getToken();
     if (dataToken.status_code == 200) {
@@ -120,6 +139,16 @@ const buildUrl = (base, uri) => {
   return `${normalizedBase}${normalizedUri}`;
 };
 
+const normalizeEndpoint = (uri) => {
+  if (!uri) return "";
+  return uri.startsWith("/") ? uri.slice(1) : uri;
+};
+
+const toggleTrailingSlash = (uri) => {
+  if (!uri) return uri;
+  return uri.endsWith("/") ? uri.slice(0, -1) : `${uri}/`;
+};
+
 export const Get = async (uri, token = "") => {
   const [API_URI] = await getApiConfig();
 
@@ -136,16 +165,25 @@ export const Get = async (uri, token = "") => {
       };
     }
 
-    const url = buildUrl(API_URI, uri);
+    const endpoint = normalizeEndpoint(uri);
+    const url = buildUrl(API_URI, endpoint);
     console.log("[API][GET]", url);
     const response = await fetch(url, {
       method: "GET",
       headers: headers,
     });
+    if (response.status === 404) {
+      const alt = toggleTrailingSlash(endpoint);
+      if (alt !== endpoint) {
+        const altUrl = buildUrl(API_URI, alt);
+        console.log("[API][GET][retry]", altUrl);
+        const retry = await fetch(altUrl, { method: "GET", headers });
+        const retryData = await retry.json();
+        return retryData;
+      }
+    }
 
-    let data = await response.json();
-
-    return data;
+    return await response.json();
   } catch (error) {
     // console.log("ESTE ES EL ERROR " + error);
     return errorResponse(error);

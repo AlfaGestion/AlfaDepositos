@@ -54,11 +54,15 @@ export default function SyncScreen({ navigation, route }) {
   const REQUEST_TIMEOUT_MS = 60000;
   const fetchWithTimeout = async (endpoint, message) => {
     setStatusMessage(message);
+    console.log("[SYNC] start", endpoint);
     const timeout = new Promise((_, reject) =>
       setTimeout(() => reject(new Error(`Timeout en ${endpoint}`)), REQUEST_TIMEOUT_MS)
     );
-    return await Promise.race([getDataFromAPI(endpoint), timeout]);
+    const data = await Promise.race([getDataFromAPI(endpoint), timeout]);
+    console.log("[SYNC] done", endpoint, data?.status_code);
+    return data;
   };
+
 
   const createTables = async () => {
     // await Payment.dropTable();
@@ -96,6 +100,8 @@ export default function SyncScreen({ navigation, route }) {
     let data;
 
     //Configuración del vendedor
+    const currentApiUri = await Configuration.getConfigValue("API_URI");
+    console.log("[SYNC] API_URI", currentApiUri);
     data = await fetchWithTimeout(`seller/config/${login.user.user ?? "1"}`, "Sincronizando configuracion...");
 
     if (!data.error) {
