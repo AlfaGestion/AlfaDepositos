@@ -1,39 +1,27 @@
 {
-  "cli": {
-    "version": ">= 1.0.1"
-  },
+  "cli": { "version": ">= 1.0.1" },
   "build": {
     "development": {
       "distribution": "internal",
       "android": {
         "gradleCommand": ":app:assembleDebug",
-        "env": {
-          "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk"
-        }
+        "env": { "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk" }
       },
-      "ios": {
-        "buildConfiguration": "Debug"
-      }
+      "ios": { "buildConfiguration": "Debug" }
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleRelease",
-        "env": {
-          "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk"
-        }
+        "env": { "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk" }
       }
     },
     "production": {
       "android": {
-        "env": {
-          "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk"
-        }
+        "env": { "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk" }
       }
     }
   },
-  "submit": {
-    "production": {}
-  }
+  "submit": { "production": {} }
 }
