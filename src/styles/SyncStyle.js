@@ -1,5 +1,6 @@
 import { StyleSheet } from "react-native";
 import Colors from "./Colors";
+import { Fonts, Radii, Shadow } from "@styles/Theme";
 import { moderateScale, horizontalScale, verticalScale } from "../utils/Metrics";
 
 const syncStyle = StyleSheet.create({
@@ -7,25 +8,68 @@ const syncStyle = StyleSheet.create({
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#E7F1F9",
+    paddingHorizontal: 16,
   },
   text: {
     fontSize: moderateScale(16),
     textAlign: "center",
     padding: 10,
-    marginVertical: verticalScale(20)
+    marginVertical: verticalScale(16),
+    color: Colors.DGREY,
+    fontFamily: Fonts.body,
   },
   image: {
-    width: 100,
-    height: 100,
+    width: 96,
+    height: 96,
     marginBottom: verticalScale(20),
   },
   btnSync: {
-    padding: 15,
-    backgroundColor: Colors.DGREEN,
+    paddingVertical: 12,
+    paddingHorizontal: 22,
+    backgroundColor: Colors.SURFACE,
+    borderRadius: Radii.lg,
+    borderWidth: 1,
+    borderColor: Colors.BORDER,
+    ...Shadow.sm,
   },
   textBtnSync: {
     fontSize: moderateScale(17),
-    color: Colors.WHITE,
+    color: Colors.PRIMARY,
+    fontFamily: Fonts.body,
+    letterSpacing: 0.6,
+  },
+  cardButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    backgroundColor: Colors.SURFACE,
+    borderRadius: Radii.lg,
+    borderWidth: 1,
+    borderColor: Colors.BORDER,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 12,
+    ...Shadow.sm,
+  },
+  cardIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F0F5FA",
+    borderWidth: 1,
+    borderColor: Colors.BORDER,
+  },
+  cardIcon: {
+    width: 28,
+    height: 28,
+  },
+  cardText: {
+    fontFamily: Fonts.display,
+    fontSize: moderateScale(17),
+    color: Colors.DGREY,
   },
   errorMessage: {
     fontSize: moderateScale(15),
@@ -37,47 +81,95 @@ const syncStyle = StyleSheet.create({
   finalText: {
     fontSize: moderateScale(15),
     marginTop: verticalScale(20),
+    color: Colors.DGREY,
+    fontFamily: Fonts.body,
   },
   btnReturn: {
-    padding: 5,
-    backgroundColor: Colors.DGREEN,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    backgroundColor: Colors.PRIMARY,
+    borderRadius: Radii.md,
+    ...Shadow.sm,
   },
   textBtnReturn: {
     fontSize: moderateScale(16),
     textAlign: "center",
     color: Colors.WHITE,
+    fontFamily: Fonts.body,
   },
 });
 
 const sendPending = StyleSheet.create({
   mainContainer: {
     flex: 1,
+    backgroundColor: "#E7F1F9",
   },
   container: {
     alignItems: "center",
     marginTop: 10,
-    padding: 10,
+    padding: 16,
   },
   textHeader: {
     fontSize: 16,
     textAlign: "center",
+    color: Colors.DGREY,
+    fontFamily: Fonts.body,
   },
   imageHeader: {
     marginVertical: 20,
-    width: 70,
-    height: 70,
+    width: 72,
+    height: 72,
   },
   btnSendPending: {
-    padding: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     marginVertical: 20,
-    backgroundColor: Colors.DGREEN,
+    backgroundColor: Colors.SURFACE,
+    borderRadius: Radii.lg,
+    borderWidth: 1,
+    borderColor: Colors.BORDER,
+    ...Shadow.sm,
   },
   btnSendPendingDisabled: {
     opacity: 0.6,
   },
   textBtnSendPending: {
-    color: Colors.WHITE,
+    color: Colors.PRIMARY,
     fontSize: 17,
+    fontFamily: Fonts.body,
+    letterSpacing: 0.6,
+  },
+  cardButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    backgroundColor: Colors.SURFACE,
+    borderRadius: Radii.lg,
+    borderWidth: 1,
+    borderColor: Colors.BORDER,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    gap: 12,
+    ...Shadow.sm,
+  },
+  cardIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F0F5FA",
+    borderWidth: 1,
+    borderColor: Colors.BORDER,
+  },
+  cardIcon: {
+    width: 28,
+    height: 28,
+  },
+  cardText: {
+    fontFamily: Fonts.display,
+    fontSize: moderateScale(17),
+    color: Colors.DGREY,
   },
   containerTextError: {
     marginVertical: 20,
@@ -87,6 +179,7 @@ const sendPending = StyleSheet.create({
     fontSize: 16,
     margin: 10,
     textAlign: "center",
+    fontFamily: Fonts.body,
   },
 });
 
@@ -94,6 +187,8 @@ const cSyncItemStyles = StyleSheet.create({
   syncText: {
     fontSize: 15,
     paddingBottom: 5,
+    fontFamily: Fonts.body,
+    color: Colors.DGREY,
   },
   loaderContainer: {
     marginLeft: 20,

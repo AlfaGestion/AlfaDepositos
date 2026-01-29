@@ -23,13 +23,13 @@ export default class Configuration extends BaseModel {
   }
 
   static async getConfig(key) {
-    const sql = `SELECT value from config where key='${key}'`;
-    return await this.repository.databaseLayer.executeSql(sql, []).then(({ rows }) => rows);
+    const sql = `SELECT value from config where key=? ORDER BY id DESC`;
+    return await this.repository.databaseLayer.executeSql(sql, [key]).then(({ rows }) => rows);
   }
 
   static async getConfigValue(key) {
-    const sql = `SELECT value from config where key='${key}'`;
-    const data = await this.repository.databaseLayer.executeSql(sql, []).then(({ rows }) => rows);
+    const sql = `SELECT value from config where key=? ORDER BY id DESC LIMIT 1`;
+    const data = await this.repository.databaseLayer.executeSql(sql, [key]).then(({ rows }) => rows);
     try {
       return data[0].value;
     } catch (e) {
@@ -38,14 +38,14 @@ export default class Configuration extends BaseModel {
   }
 
   static async setConfigValue(key, value) {
-    const exists = await Configuration.getConfigValue(key);
-    let sql;
-    if (!exists) {
-      sql = `INSERT INTO config (key,value) values('${key}','${value}')`;
-    } else {
-      sql = `UPDATE config set value='${value}' WHERE key='${key}'`;
+    const sqlExists = `SELECT 1 from config where key=? LIMIT 1`;
+    const exists = await this.repository.databaseLayer.executeSql(sqlExists, [key]).then(({ rows }) => rows);
+    if (!exists || exists.length === 0) {
+      const sqlInsert = `INSERT INTO config (key,value) values(?, ?)`;
+      return await this.repository.databaseLayer.executeSql(sqlInsert, [key, value]).then(({ rows }) => rows);
     }
-    return await this.repository.databaseLayer.executeSql(sql, []).then(({ rows }) => rows);
+    const sqlUpdate = `UPDATE config set value=? WHERE key=?`;
+    return await this.repository.databaseLayer.executeSql(sqlUpdate, [value, key]).then(({ rows }) => rows);
   }
 
   static async getConfigAPI() {

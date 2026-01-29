@@ -10,25 +10,35 @@ import Account from "@db/Account";
 
 export default function AccountListSearch({ handleSelAccount, mode }) {
   const [accounts, setAccounts] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [login, loginAction] = useContext(UserContext);
 
   useEffect(() => {
     loadAccounts();
-  }, []);
+  }, [login?.user?.user, mode]);
 
   const loadAccounts = async (text = "") => {
-    const data = await Account.getAll(login.user.user, text);
+    setLoading(true);
+    try {
+      await Account.createTable();
+      const seller = login?.user?.user ?? "";
+      const data = await Account.getAll(seller, text || "");
 
-    if (mode == "COMPRAS") {
-      setAccounts(data);
-    } else if (mode == "INVENTARIO") {
-      setAccounts(
-        [{
-          code: '2111010289',
-          name: 'Depósito general',
-          priceClass: 1,
-          lista: 1
-        }]);
+      if (mode == "COMPRAS") {
+        setAccounts(Array.isArray(data) ? data : []);
+      } else if (mode == "INVENTARIO") {
+        setAccounts(
+          [{
+            code: '2111010289',
+            name: 'Depósito general',
+            price_class: 1,
+            lista: 1
+          }]);
+      }
+    } catch (e) {
+      setAccounts([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -39,7 +49,7 @@ export default function AccountListSearch({ handleSelAccount, mode }) {
         autoFocus={true}
         style={[newOrderStyles.inputSearchAccount]}
         onChangeText={(text) => loadAccounts(text)}
-        placeholder="Buscar un cliente"
+        placeholder="Buscar un proveedor"
       ></TextInput>
 
       <View style={[newOrderStyles.viewSearch]}>

@@ -1,0 +1,13 @@
+diff --git a/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts b/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
+index 4c9a1d9..7b86c32 100644
+--- a/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
++++ b/node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
+@@ -55,8 +55,6 @@ dependencies {
+ // nice message showing that JDK 11 (or 17) is required first
+ java { targetCompatibility = JavaVersion.VERSION_11 }
+ 
+-kotlin { jvmToolchain(17) }
+-
+ tasks.withType<KotlinCompile>().configureEach {
+   compilerOptions {
+     apiVersion.set(KotlinVersion.KOTLIN_1_8)

@@ -12,7 +12,7 @@ export default function ProductItem(props) {
         <View>
           {/* <Image style={styles.image} source={imgProduct}></Image> */}
 
-          <ProductImage fileName={props?.code} widthImage={40} heightImage={40} />
+          <ProductImage fileName={props?.code} widthImage={40} heightImage={40} cancelaCarga={props.cancelaCarga} />
         </View>
 
         <View style={styles.highContainer}>

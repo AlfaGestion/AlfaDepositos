@@ -13,6 +13,7 @@ import { generarComprobanteElectronico } from "@libraries/arca";
 import Account from "@db/Account";
 import Product from '../libraries/db/Product';
 import ItemsExclude from '../libraries/db/ItemsExclude';
+import SQLite from "@db/SQLiteCompat";
 
 // Crear el contexto
 const CartContext = createContext();
@@ -123,6 +124,22 @@ export const CartProvider = ({ children }) => {
     }
 
     const save = async (isShare = false, forcePrint = false) => {
+        const watchdog = setTimeout(() => {
+            console.log("[SAVE] watchdog timeout");
+            setStatus({ error: true, message: "Timeout guardando comprobante. Intente nuevamente." });
+            setIsSaving(false);
+        }, 30000);
+        const withTimeout = (promise, label, ms = 20000) =>
+            Promise.race([
+                promise,
+                new Promise((_, reject) =>
+                    setTimeout(() => {
+                        console.log("[SAVE] timeout", label);
+                        reject(new Error(`Timeout en ${label}`));
+                    }, ms)
+                ),
+            ]);
+
         setIsSaving(true)
         let printInvoice = false
         let idOrder = editId;
@@ -139,7 +156,11 @@ export const CartProvider = ({ children }) => {
         if (forcePrint) {
             printInvoice = true
         } else {
-            printInvoice = await Configuration.getConfigValue("PRINT_SUNMI") == 1
+            try {
+                printInvoice = await withTimeout(Configuration.getConfigValue("PRINT_SUNMI"), "getConfigValue(PRINT_SUNMI)") == 1
+            } catch (e) {
+                printInvoice = false
+            }
         }
 
         let id = editId ? editId : 0;
@@ -172,48 +193,132 @@ export const CartProvider = ({ children }) => {
             props["longitude"] = 0
         }
 
+        const insertOrderFast = async (props) => {
+            const db = await SQLite.openDatabase("alfadeposito.db");
+            const columns = [
+                "account",
+                "date",
+                "id_seller",
+                "net",
+                "iva",
+                "total",
+                "transferred",
+                "bill",
+                "delivery",
+                "price_class",
+                "latitude",
+                "longitude",
+                "condition",
+                "cpte",
+                "obs",
+                "tc",
+            ];
+            const values = columns.map((key) => props[key] ?? null);
+            const placeholders = columns.map(() => "?").join(", ");
+            const sql = `INSERT INTO orders (${columns.join(", ")}) VALUES (${placeholders})`;
+
+            const runInsert = () =>
+                new Promise((resolve, reject) => {
+                    db.transaction((tx) => {
+                        tx.executeSql(
+                            sql,
+                            values,
+                            (_tx, result) => resolve(result.insertId),
+                            (_tx, error) => {
+                                reject(error);
+                                return true;
+                            }
+                        );
+                    });
+                });
+
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+            let lastError = null;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    const insertPromise = runInsert();
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("Timeout en Order.insertFast")), 8000)
+                    );
+                    return await Promise.race([insertPromise, timeoutPromise]);
+                } catch (e) {
+                    lastError = e;
+                    console.log("[SAVE] Order.insertFast retry", attempt, e?.message || e);
+                    await sleep(300);
+                }
+            }
+            throw lastError || new Error("Error en Order.insertFast");
+        };
+
         try {
+            console.log("[SAVE] start", { editId, isShare, forcePrint });
             if (editId) {
-                await Order.update(props);
+                console.log("[SAVE] update order");
+                await withTimeout(Order.update(props), "Order.update");
                 //Elimino los productos de la base
-                await OrderDetail.deleteItemsByOrderId(id);
+                await withTimeout(OrderDetail.deleteItemsByOrderId(id), "OrderDetail.deleteItemsByOrderId");
             } else {
                 try {
-                    const order = new Order(props);
-                    await order.save();
-
-                    const dataId = await Order.getLastId();
-                    idOrder = dataId[0].id;
+                    console.log("[SAVE] insert order");
+                    console.log("[SAVE] Order.insertFast start");
+                    idOrder = await withTimeout(insertOrderFast(props), "Order.insertFast");
+                    console.log("[SAVE] Order.insertFast done", idOrder);
 
                     //Inserto la visita
-                    const existsVisit = await VisitDetails.findBy({ account_eq: account.code });
+                    try {
+                        await withTimeout(VisitDetails.createTable(), "VisitDetails.createTable");
+                        console.log("[SAVE] VisitDetails.findBy start");
+                        const existsVisit = await withTimeout(VisitDetails.findBy({ account_eq: account.code }), "VisitDetails.findBy");
+                        console.log("[SAVE] VisitDetails.findBy done");
 
-                    if (!existsVisit) {
-                        const dataVisit = {
-                            visited: 1,
-                            obs: "",
-                            account: account.code,
-                            seller: login.user.user,
-                            date: formatDate(new Date(), true, false),
-                        };
+                        if (!existsVisit) {
+                            const dataVisit = {
+                                visited: 1,
+                                obs: "",
+                                account: account.code,
+                                seller: login.user.user,
+                                date: formatDate(new Date(), true, false),
+                            };
 
-                        const visit = new VisitDetails(dataVisit);
-                        visit.save();
+                            const visit = new VisitDetails(dataVisit);
+                            console.log("[SAVE] VisitDetails.save start");
+                            await withTimeout(visit.save(), "VisitDetails.save");
+                            console.log("[SAVE] VisitDetails.save done");
+                        }
+                    } catch (e) {
+                        console.log("[SAVE] VisitDetails skipped", e?.message || e);
                     }
                 } catch (err) {
                     setIsSaving(false)
                     console.log(err);
+                    clearTimeout(watchdog);
+                    return;
                 }
             }
 
-            saveProducts(idOrder, isShare, printInvoice);
+            await withTimeout(saveProducts(idOrder, isShare, printInvoice), "saveProducts");
+            clearTimeout(watchdog);
         } catch (e) {
             console.log(e);
+            setStatus({ error: true, message: e?.message || "Error al guardar el comprobante." })
             setIsSaving(false)
+            clearTimeout(watchdog);
+        } finally {
+            clearTimeout(watchdog);
+            setIsSaving(false);
         }
     }
 
     async function saveProducts(orderId, isShare = false, isPrint = false) {
+        const withTimeout = (promise, label, ms = 20000) =>
+            Promise.race([
+                promise,
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error(`Timeout en ${label}`)), ms)
+                ),
+            ]);
+
         let objectArray = [];
         let props = {};
         const esCpteElectronico = (documentData?.typeDocument == 'eFC' || documentData?.typeDocument == 'eNC' || documentData?.typeDocument == 'eND')
@@ -239,16 +344,17 @@ export const CartProvider = ({ children }) => {
         // return
 
         try {
+            console.log("[SAVE] saveProducts start", { orderId, items: objectArray.length });
 
             if (noPermiteDuplicarItem) {
-                bulkInsert("items_exclude", objectArray.map(i => { return { code: i.product } }))
+                await withTimeout(bulkInsert("items_exclude", objectArray.map(i => { return { code: i.product } })), "bulkInsert(items_exclude)");
             }
 
-            bulkInsert("orders_detail", objectArray);
+            await withTimeout(bulkInsert("orders_detail", objectArray), "bulkInsert(orders_detail)");
 
             //GENERO COMPROBANTE ELECTRONICO
             if (esCpteElectronico) {
-                const eRes = await generarComprobanteElectronico(documentData?.typeDocument, parseInt(orderId))
+                const eRes = await withTimeout(generarComprobanteElectronico(documentData?.typeDocument, parseInt(orderId)), "generarComprobanteElectronico", 30000)
 
                 if (eRes?.error) {
                     // setErrorCpte(eRes.message)
@@ -260,15 +366,15 @@ export const CartProvider = ({ children }) => {
             }
 
             if (isShare || isPrint || esCpteElectronico) {
-                const order = await Order.find(parseInt(orderId));
+                const order = await withTimeout(Order.find(parseInt(orderId)), "Order.find");
                 const payload = { order, products: cartItems, };
 
-                const account = await Account.findBy({ code_eq: order?.account });
+                const account = await withTimeout(Account.findBy({ code_eq: order?.account }), "Account.findBy");
                 payload.accountName = account ? account.name : "";
                 payload.sellerName = login.user.name;
 
                 if (isShare) {
-                    const html = await getTemplate(esCpteElectronico ? "efc" : "order", payload);
+                    const html = await withTimeout(getTemplate(esCpteElectronico ? "efc" : "order", payload), "getTemplate", 30000);
                     generatePdf(html);
                 } else {
                     printDocument(payload)
@@ -278,6 +384,7 @@ export const CartProvider = ({ children }) => {
             setStatus({ error: false, message: "Comprobante generado correctamente!" })
             restartCart()
             setIsSaving(false)
+            console.log("[SAVE] saveProducts done");
             // console.log("PASO1")
             // navigation.setParams("reloadOrderList", true);
             // navigation.navigate("ListOrdersScreen", { reloadOrderList: true });
@@ -307,7 +414,12 @@ export const CartProvider = ({ children }) => {
 
     const addAccount = (accountData) => {
         // console.log(accountData)
-        setAccount(accountData)
+        const parsed = parseInt(accountData?.priceClass, 10);
+        const normalized = {
+            ...accountData,
+            priceClass: Number.isFinite(parsed) && parsed > 0 ? parsed : 1
+        }
+        setAccount(normalized)
     }
 
     const removeAccount = () => {
@@ -380,6 +492,60 @@ export const CartProvider = ({ children }) => {
                 // Si no está en el carrito, lo agregamos con una cantidad de 1
                 return [...prevItems, { ...product, bultos: bultos, priceWithDiscount: priceWithDiscount, quantity: parseInt(quantity), disc: disc, alicIva: (parseInt(product?.iva) == 0 || product?.iva == null) ? 21 : product?.iva }];
             }
+        });
+    };
+
+    // Agrega muchos productos en un solo setState (evita bloqueos)
+    const addManyToCart = (items = []) => {
+        if (!Array.isArray(items) || items.length === 0) return;
+        setCartItems((prevItems) => {
+            const next = [...prevItems];
+            const indexById = new Map(next.map((it, idx) => [it.id, idx]));
+
+            for (const entry of items) {
+                const product = entry.product;
+                const qty = parseInt(entry.qty, 10) || 1;
+                const disc = entry.disc || 0;
+                const bultos = entry.bultos || 0;
+                const newPrice = entry.newPrice || 0;
+
+                let actualPrice = 0;
+                if (newPrice > 0) {
+                    actualPrice = newPrice;
+                    product[`${`${priceClassSelected}`?.length < 3 ? ('price' + priceClassSelected) : priceClassSelected}`] = newPrice;
+                } else {
+                    actualPrice = product[priceClassSelected];
+                }
+
+                let priceWithDiscount = 0;
+                if (disc > 0) {
+                    priceWithDiscount = actualPrice - ((actualPrice * disc) / 100);
+                }
+
+                if (indexById.has(product.id)) {
+                    const idx = indexById.get(product.id);
+                    const item = next[idx];
+                    const itemPriceWithDiscount = disc > 0 ? priceWithDiscount : item.priceWithDiscount;
+                    next[idx] = {
+                        ...item,
+                        bultos: bultos > 0 ? bultos : parseInt(item.bultos),
+                        disc: disc == 0 ? item.disc : 0,
+                        priceWithDiscount: itemPriceWithDiscount,
+                        quantity: parseInt(item.quantity) + qty
+                    };
+                } else {
+                    next.push({
+                        ...product,
+                        bultos,
+                        priceWithDiscount,
+                        quantity: qty,
+                        disc,
+                        alicIva: (parseInt(product?.iva) == 0 || product?.iva == null) ? 21 : product?.iva
+                    });
+                    indexById.set(product.id, next.length - 1);
+                }
+            }
+            return next;
         });
     };
 
@@ -514,7 +680,7 @@ export const CartProvider = ({ children }) => {
     };
 
     return (
-        <CartContext.Provider value={{ setOrderMode, orderMode, noPermiteDuplicarItem, account, getItem, getTotalDiscount, passValidations, deleteOrder, isLoading, loadImages, isEditorder, loadEditOrder, isSaving, removeAccount, status, save, documentData, setPriceClass, setInvoiceType, setTypeDocument, setSaleCondition, getDetalleIva, addAccount, getSubtotal, getCurrentQuantity, cartItems, addToCart, removeFromCart, decreaseQuantity, clearCart, getTotal, getTotalItems, globalPriceClass, setGlobalPriceClass }}>
+        <CartContext.Provider value={{ setOrderMode, orderMode, noPermiteDuplicarItem, account, getItem, getTotalDiscount, passValidations, deleteOrder, isLoading, loadImages, isEditorder, loadEditOrder, isSaving, removeAccount, status, save, documentData, setPriceClass, setInvoiceType, setTypeDocument, setSaleCondition, getDetalleIva, addAccount, getSubtotal, getCurrentQuantity, cartItems, addToCart, addManyToCart, removeFromCart, decreaseQuantity, clearCart, getTotal, getTotalItems, globalPriceClass, setGlobalPriceClass }}>
             {children}
         </CartContext.Provider>
     );

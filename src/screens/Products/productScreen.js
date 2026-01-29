@@ -23,12 +23,12 @@ export default function ProductScreen({ navigation, route }) {
   const { id: productId = null } = route?.params || {}
 
   const loadConfiguration = async () => {
-    const data = await Configuration.getConfig("CARGA_IMAGENES");
-
-    if (data) {
-      if (data[0]?.value == '1') {
-        setCargaImagenes(true)
-      }
+    try {
+      await Configuration.createTable();
+      const value = await Configuration.getConfigValue("CARGA_IMAGENES");
+      setCargaImagenes(value == '1');
+    } catch (e) {
+      setCargaImagenes(false);
     }
   }
 

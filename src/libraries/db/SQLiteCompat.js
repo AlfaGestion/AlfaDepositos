@@ -1,42 +1,96 @@
 import { openDatabaseAsync } from "expo-sqlite";
 
+let transactionQueue = Promise.resolve();
+let cachedDb = null;
+let cachedDbPromise = null;
+
+const getDb = async (name, options, directory) => {
+  if (cachedDb) return cachedDb;
+  if (!cachedDbPromise) {
+    cachedDbPromise = openDatabaseAsync(name, options, directory).then((db) => {
+      cachedDb = db;
+      return db;
+    });
+  }
+  return cachedDbPromise;
+};
+
+const runWithQueue = (work, onError) => {
+  transactionQueue = transactionQueue
+    .then(() => work())
+    .catch((e) => {
+      if (onError) {
+        onError(e);
+      } else {
+        // Avoid breaking the queue on unhandled errors
+        // eslint-disable-next-line no-console
+        console.error("[DB] transaction error", e);
+      }
+    });
+  return transactionQueue;
+};
+
 const wrapDatabase = (name, options, directory) => ({
   transaction: (fn, error, success) => {
-    (async () => {
-      const db = await openDatabaseAsync(name, options, directory);
+    runWithQueue(async () => {
+      const db = await getDb(name, options, directory);
+      // Skip PRAGMA busy_timeout to avoid execAsync issues on some devices
       await db.withTransactionAsync(async () => {
         const pending = [];
+        const runStatement = async (database, sql, params) => {
+          const stmt = await database.prepareAsync(sql);
+          const result = await stmt.executeAsync(...params);
+          let rows = [];
+          try {
+            rows = await result.getAllAsync();
+          } catch (e) {
+            rows = [];
+          }
+          const resultSet = {
+            rows: { _array: rows, length: rows.length },
+            insertId: result.lastInsertRowId,
+            rowsAffected: result.changes,
+          };
+          await stmt.finalizeAsync();
+          return resultSet;
+        };
         const tx = {
-          executeSql: async (sql, params = [], onSuccess, onError) => {
-            const exec = (async () => {
+          executeSql: (sql, params = [], onSuccess, onError) => {
+            const run = (async () => {
               try {
-                const stmt = await db.prepareAsync(sql);
-                const result = await stmt.executeAsync(...params);
-                let rows = [];
-                try {
-                  rows = await result.getAllAsync();
-                } catch (e) {
-                  rows = [];
-                }
-                const resultSet = {
-                  rows: { _array: rows, length: rows.length },
-                  insertId: result.lastInsertRowId,
-                  rowsAffected: result.changes,
-                };
-                await stmt.finalizeAsync();
+                let resultSet = await runStatement(db, sql, params);
                 if (onSuccess) {
                   onSuccess(tx, resultSet);
                 }
                 return resultSet;
               } catch (e) {
+                const message = e?.message || "";
+                if (message.includes("NullPointerException") || message.includes("execAsync")) {
+                  try {
+                    // Reset cached connection and retry once with a fresh handle
+                    cachedDb = null;
+                    cachedDbPromise = null;
+                    const retryDb = await getDb(name, options, directory);
+                    const resultSet = await runStatement(retryDb, sql, params);
+                    if (onSuccess) {
+                      onSuccess(tx, resultSet);
+                    }
+                    return resultSet;
+                  } catch (retryError) {
+                    if (onError) {
+                      return onError(tx, retryError);
+                    }
+                    throw retryError;
+                  }
+                }
                 if (onError) {
                   return onError(tx, e);
                 }
                 throw e;
               }
             })();
-            pending.push(exec);
-            return exec;
+            pending.push(run);
+            return run;
           },
         };
         const maybePromise = fn(tx);
@@ -50,13 +104,7 @@ const wrapDatabase = (name, options, directory) => ({
       if (success) {
         success();
       }
-    })().catch((e) => {
-      if (error) {
-        error(e);
-        return;
-      }
-      throw e;
-    });
+    }, error);
   },
 });
 

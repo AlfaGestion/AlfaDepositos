@@ -26,6 +26,7 @@ export default function ListOrdersScreen({ navigation }) {
     const tcFilter = tab === "compras" ? "RP" : "IR";
     
     try {
+      await Order.createTable();
       // Importante: Asegúrate que tu método Order.findAll() soporte 
       // el filtrado por TC o filtra el resultado aquí:
       const data = await Order.findAll();
@@ -116,9 +117,9 @@ export default function ListOrdersScreen({ navigation }) {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#E7F1F9" }}>
       {/* SELECTOR DE PESTAÑAS */}
-      <View style={{ flexDirection: 'row', height: 50, borderBottomWidth: 1, borderColor: '#ccc', backgroundColor: '#fff' }}>
+      <View style={{ flexDirection: "row", height: 50, borderBottomWidth: 1, borderColor: "#ccc", backgroundColor: "#E7F1F9" }}>
         <TouchableOpacity
           onPress={() => handleActiveTab("compras")}
           style={{

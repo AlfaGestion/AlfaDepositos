@@ -23,7 +23,7 @@ export default function CartScreen({ jumpTo }) {
     return (
         <View>
             <ListaProductos
-                priceClassSelected={account?.priceClass}
+                priceClassSelected={account?.priceClass ?? 1}
                 lista={account?.lista}
             />
         </View>

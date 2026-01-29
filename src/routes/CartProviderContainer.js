@@ -1,4 +1,3 @@
-import { CartProvider } from '../hooks/useCart'
 import OrderViewTab from './OrderViewTab'
 import { LogBox } from 'react-native';
 
@@ -9,8 +8,6 @@ LogBox.ignoreLogs([
 export default function CartProviderContainer({ route, navigation }) {
     // console.log(route.params)
     return (
-        <CartProvider>
-            <OrderViewTab route={route} navigation={navigation} />
-        </CartProvider>
+        <OrderViewTab route={route} navigation={navigation} />
     )
 }

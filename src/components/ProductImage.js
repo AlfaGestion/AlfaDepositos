@@ -11,6 +11,17 @@ export default function ProductImage({ fileName, reload = false, widthImage = 20
     const [error, setError] = useState(false);
 
     const loadConfig = async () => {
+        if (cancelaCarga) {
+            setImageUri(null);
+            setError(true);
+            return;
+        }
+        try {
+            await Configuration.createTable();
+        } catch (e) {
+            setError(true);
+            return;
+        }
 
         // const files = await FileSystem.readDirectoryAsync(FileSystem.documentDirectory);
 
@@ -20,17 +31,27 @@ export default function ProductImage({ fileName, reload = false, widthImage = 20
         //     }
         // }
 
-        let cargaImagenes = await Configuration.getConfig("CARGA_IMAGENES");
+        let cargaImagenes;
+        try {
+            cargaImagenes = await Configuration.getConfigValue("CARGA_IMAGENES");
+        } catch (e) {
+            setError(true);
+            return;
+        }
 
-        if (cargaImagenes) {
-            if (cargaImagenes[0]?.value == '1') {
-                let data = await Configuration.getConfig("ALFA_ACCOUNT");
-                if (data) {
-                    setImageUri(null)
-                    setError(false)
-                    const imageUrl = `https://alfanet.com.ar/ac/public/assets/images/${data[0]?.value}/${fileName}.jpg`
-                    loadImage(FileSystem.documentDirectory + fileName + '.jpg', imageUrl);
-                }
+        if (cargaImagenes == '1') {
+            let data;
+            try {
+                data = await Configuration.getConfig("ALFA_ACCOUNT");
+            } catch (e) {
+                setError(true);
+                return;
+            }
+            if (data) {
+                setImageUri(null)
+                setError(false)
+                const imageUrl = `https://alfanet.com.ar/ac/public/assets/images/${data[0]?.value}/${fileName}.jpg`
+                loadImage(FileSystem.documentDirectory + fileName + '.jpg', imageUrl);
             } else {
                 setError(true)
             }
@@ -86,13 +107,14 @@ export default function ProductImage({ fileName, reload = false, widthImage = 20
 
     useEffect(() => {
         if (cancelaCarga) {
+            setImageUri(null);
             setError(true)
         } else {
             if (fileName) {
                 loadConfig()
             }
         }
-    }, [fileName]);
+    }, [fileName, cancelaCarga]);
 
     return (
         <View style={styles.container}>

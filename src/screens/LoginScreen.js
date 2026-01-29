@@ -8,7 +8,7 @@ import { Image, Text, TextInput, TouchableOpacity, View, Modal, StyleSheet, Pres
 
 import { loginStyles } from "@styles/Styles";
 
-import iconAlfa from "@assets/alfa_new_logo.png";
+import BrandMark from "@components/BrandMark";
 
 import Colors from "@styles/Colors";
 
@@ -97,8 +97,8 @@ export default function LoginScreen({ navigation }) {
   return (
     <>
       <View style={[loginStyles.container]}>
-        <Image style={[loginStyles.logo]} source={iconAlfa} />
-        <Text style={[loginStyles.title]}>LOGIN</Text>
+        <BrandMark />
+        <Text style={[loginStyles.title]}>Ingresar</Text>
 
         {error ? <Text style={[loginStyles.textError]}>{error}</Text> : <Text></Text>}
 

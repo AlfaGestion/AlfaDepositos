@@ -1,7 +1,9 @@
 import Account from "@db/Account";
 import { useEffect, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { SceneMap, TabView } from 'react-native-tab-view';
+import { SceneMap, TabBar, TabView } from 'react-native-tab-view';
+import Colors from "@styles/Colors";
+import { Fonts } from "@styles/Theme";
 import { useCart } from '../hooks/useCart';
 import CartScreen from '../screens/Orders/CartScreen';
 
@@ -98,6 +100,26 @@ export default function StockViewTab({ navigation, route }) {
             renderScene={renderScene}
             onIndexChange={setIndex}
             initialLayout={{ width: layout.width }}
+            renderTabBar={(props) => (
+                <TabBar
+                    {...props}
+                    style={{ backgroundColor: "#1E5AA8" }}
+                    indicatorStyle={{
+                        backgroundColor: Colors.SURFACE,
+                        height: 34,
+                        borderRadius: 18,
+                        margin: 6,
+                    }}
+                    tabStyle={{ minHeight: 48, borderRadius: 18 }}
+                    activeColor={Colors.PRIMARY_DARK}
+                    inactiveColor="rgba(255,255,255,0.7)"
+                    labelStyle={{
+                        fontFamily: Fonts.display,
+                        fontSize: 12,
+                        letterSpacing: 1,
+                    }}
+                />
+            )}
         />
         // </CartProvider>
 

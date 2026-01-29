@@ -1,6 +1,7 @@
 import { useCart } from '@hooks/useCart';
 import { useEffect } from 'react';
 import { ActivityIndicator, Button, FlatList, Text, TouchableOpacity, View, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ItemResumeCart from '../../components/Cart/ItemResumeCart';
 import Colors from '../../styles/Colors';
 import { getFontSize } from '../../utils/Metrics';
@@ -9,6 +10,16 @@ export default function ResumeCartScreen({ jumpTo }) {
     // const [estado, setEstado] = useState({ error: false, message: null })
     const { cartItems, getTotal, getSubtotal, account, getDetalleIva, save, getTotalDiscount, status, isSaving } = useCart();
     const navigation = useNavigation();
+    const insets = useSafeAreaInsets();
+
+    const formatAmount = (value) => {
+        const num = Number.parseFloat(value);
+        if (!Number.isFinite(num)) return "0,00";
+        return new Intl.NumberFormat("es-AR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+        }).format(num);
+    };
 
     const handleSaveOrder = () => {
         Alert.alert(
@@ -81,42 +92,48 @@ export default function ResumeCartScreen({ jumpTo }) {
                 }}
             />
 
-            <View style={{ position: "absolute", width: "100%", minHeight: 100, backgroundColor: "#dddddd", bottom: 0, zIndex: 99, paddingVertical: 5 }}>
-                <View style={{ width: "100%", paddingHorizontal: 10 }}>
+            <View style={{ position: "absolute", width: "100%", minHeight: 100, backgroundColor: "#F0F5FA", bottom: 0, zIndex: 99, paddingVertical: 8, paddingBottom: 8 + (insets?.bottom || 0) }}>
+                <View style={{ width: "100%", paddingHorizontal: 12 }}>
 
                     {(status?.message && status?.error) && <Text style={{ color: "white", backgroundColor: status?.error ? Colors.RED : Colors.GREEN, width: "100%", textAlign: "center", padding: 5 }}>{status.message}</Text>}
 
-                    <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#bebebe", borderBottomWidth: 1, paddingVertical: 3 }}>
-                        <Text style={{ fontSize: getFontSize(15) }}>SUBTOTAL</Text>
-                        <Text style={{ fontSize: getFontSize(15) }}>${getSubtotal()}</Text>
+                    <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#D0D7E2", borderBottomWidth: 1, paddingVertical: 4 }}>
+                        <Text style={{ fontSize: getFontSize(14), color: Colors.MUTED }}>SUBTOTAL</Text>
+                        <Text style={{ fontSize: getFontSize(14), color: Colors.DGREY }}>${formatAmount(getSubtotal())}</Text>
                     </View>
 
-                    <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#bebebe", borderBottomWidth: 1, paddingVertical: 3 }}>
-                        <Text style={{ fontSize: getFontSize(15) }}>DESCUENTO</Text>
-                        <Text style={{ fontSize: getFontSize(15) }}>${getTotalDiscount()}</Text>
+                    <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#D0D7E2", borderBottomWidth: 1, paddingVertical: 4 }}>
+                        <Text style={{ fontSize: getFontSize(14), color: Colors.MUTED }}>DESCUENTO</Text>
+                        <Text style={{ fontSize: getFontSize(14), color: Colors.DGREY }}>${formatAmount(getTotalDiscount())}</Text>
                     </View>
 
                     {getDetalleIva()?.map((item, idx) => (
-                        <View key={`iva_${idx}`} style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#bebebe", borderBottomWidth: 1, paddingVertical: 3 }}>
-                            <Text style={{ fontSize: getFontSize(15) }}>IVA {item.iva}%</Text>
-                            <Text style={{ fontSize: getFontSize(15) }}>${parseFloat(item.importe).toFixed(2)}</Text>
+                        <View key={`iva_${idx}`} style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#D0D7E2", borderBottomWidth: 1, paddingVertical: 4 }}>
+                            <Text style={{ fontSize: getFontSize(14), color: Colors.MUTED }}>IVA {item.iva}%</Text>
+                            <Text style={{ fontSize: getFontSize(14), color: Colors.DGREY }}>${formatAmount(item.importe)}</Text>
                         </View>
                     ))}
 
-                    <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row" }}>
-                        <Text style={{ fontSize: getFontSize(20), fontWeight: "bold" }}>TOTAL</Text>
-                        <Text style={{ fontSize: getFontSize(20), fontWeight: "bold" }}>${getTotal()}</Text>
+                    <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", paddingTop: 4 }}>
+                        <Text style={{ fontSize: getFontSize(18), fontWeight: "bold", color: Colors.DGREY }}>TOTAL</Text>
+                        <Text style={{ fontSize: getFontSize(18), fontWeight: "bold", color: Colors.DGREY }}>${formatAmount(getTotal())}</Text>
                     </View>
                 </View>
 
-                <TouchableOpacity disabled={isSaving} onPress={() => handleSaveOrder()} style={{ width: "100%", marginTop: 10 }}>
+                <TouchableOpacity
+                    disabled={isSaving}
+                    onPress={() => handleSaveOrder()}
+                    style={{ width: "100%", marginTop: 10, paddingHorizontal: 10 }}
+                >
                     {isSaving ?
-                        <View style={{ flexDirection: "row", width: "100%", backgroundColor: Colors.GREEN, padding: 10, alignItems: "center", justifyContent: "center" }}>
+                        <View style={{ flexDirection: "row", width: "100%", backgroundColor: Colors.GREEN, paddingVertical: 12, alignItems: "center", justifyContent: "center", borderRadius: 14 }}>
                             <ActivityIndicator size="small" />
                             <Text style={{ textAlign: "center", fontSize: getFontSize(18), fontWeight: "600", color: "white", marginLeft: 5 }}>GENERANDO</Text>
                         </View>
                         :
-                        <Text style={{ textAlign: "center", fontSize: getFontSize(18), fontWeight: "600", backgroundColor: Colors.GREEN, color: "white", padding: 10 }}>RECEPCIONAR</Text>
+                        <View style={{ width: "100%", backgroundColor: Colors.GREEN, paddingVertical: 12, alignItems: "center", justifyContent: "center", borderRadius: 14 }}>
+                            <Text style={{ textAlign: "center", fontSize: getFontSize(18), fontWeight: "600", color: "white" }}>RECEPCIONAR</Text>
+                        </View>
                     }
                 </TouchableOpacity>
 

@@ -19,8 +19,9 @@ import Location from "@db/Location";
 import Task from "@db/Task";
 import { getDataFromAPI } from "@libraries/api";
 
+import BrandMark from "@components/BrandMark";
 import iconSync from "@icons/sync.png";
-
+      <BrandMark label="Alfa Depósitos" size={72} />
 import { syncStyle } from "@styles/SyncStyle";
 
 import { UserContext } from "@context/UserContext";
@@ -51,14 +52,18 @@ export default function SyncScreen({ navigation, route }) {
   const [showLoaderArticulosListas, setShowLoaderArticulosListas] = useState(true);
   const [statusMessage, setStatusMessage] = useState("");
 
-  const REQUEST_TIMEOUT_MS = 20000;
+  const REQUEST_TIMEOUT_MS = 60000;
   const fetchWithTimeout = async (endpoint, message) => {
     setStatusMessage(message);
+    console.log("[SYNC] start", endpoint);
     const timeout = new Promise((_, reject) =>
       setTimeout(() => reject(new Error(`Timeout en ${endpoint}`)), REQUEST_TIMEOUT_MS)
     );
-    return await Promise.race([getDataFromAPI(endpoint), timeout]);
+    const data = await Promise.race([getDataFromAPI(endpoint), timeout]);
+    console.log("[SYNC] done", endpoint, data?.status_code);
+    return data;
   };
+
 
   const createTables = async () => {
     // await Payment.dropTable();
@@ -82,6 +87,8 @@ export default function SyncScreen({ navigation, route }) {
     setShowButtonSync(false);
 
     try {
+    await Configuration.createTable();
+    await Configuration.setConfigValue("SYNC_IN_PROGRESS", 1);
     await createTables();
 
     // Omitidos de la sincronizacion
@@ -96,13 +103,28 @@ export default function SyncScreen({ navigation, route }) {
     let data;
 
     //Configuración del vendedor
+    const currentApiUri = await Configuration.getConfigValue("API_URI");
+    console.log("[SYNC] API_URI", currentApiUri);
     data = await fetchWithTimeout(`seller/config/${login.user.user ?? "1"}`, "Sincronizando configuracion...");
 
     if (!data.error) {
-      data.data.map((item) => {
-        Configuration.setConfigValue(item.key, item.value);
+      const protectedKeys = new Set([
+        "API_URI",
+        "ALFA_ACCOUNT",
+        "PASSWORD_SYNC",
+        "USERNAME_SYNC",
+        "ALFA_DATABASE_ID",
+      ]);
+      for (const item of data.data) {
+        if (protectedKeys.has(item.key)) {
+          const currentValue = await Configuration.getConfigValue(item.key);
+          if (currentValue !== null && currentValue !== undefined && currentValue !== "") {
+            continue;
+          }
+        }
+        await Configuration.setConfigValue(item.key, item.value);
         // Configuration.setConfigValue(item.key, item.value == "SI" ? 1 : 0);
-      });
+      }
       updateStatus("configuration");
     } else {
       setErrorSync(data.message);
@@ -111,9 +133,9 @@ export default function SyncScreen({ navigation, route }) {
 
     // Rubros
     // Category.createTable();
-    Category.destroyAll();
+    await Category.destroyAll();
 
-    data = await fetchWithTimeout("category/", "Sincronizando rubros...");
+    data = await fetchWithTimeout("category", "Sincronizando rubros...");
 
     if (!data.error) {
       data.data.map((item) => {
@@ -124,7 +146,7 @@ export default function SyncScreen({ navigation, route }) {
         objectArray.push(props);
       });
 
-      bulkInsert("categories", objectArray);
+      await bulkInsert("categories", objectArray);
       updateStatus("rubros");
     } else {
       setErrorSync(data.message);
@@ -133,11 +155,11 @@ export default function SyncScreen({ navigation, route }) {
 
     //Familias
     // Family.createTable();
-    Family.destroyAll();
+    await Family.destroyAll();
 
     objectArray = [];
 
-    data = await fetchWithTimeout("family/", "Sincronizando familias...");
+    data = await fetchWithTimeout("family", "Sincronizando familias...");
     if (!data.error) {
       data.data.map((item) => {
         props = {
@@ -147,7 +169,7 @@ export default function SyncScreen({ navigation, route }) {
         objectArray.push(props);
       });
 
-      bulkInsert("families", objectArray);
+      await bulkInsert("families", objectArray);
       updateStatus("familias");
     } else {
       setErrorSync(data.message);
@@ -155,7 +177,7 @@ export default function SyncScreen({ navigation, route }) {
     }
 
     //Proveedores
-    Account.destroyAll();
+    await Account.destroyAll();
     let pages = 50;
 
     for (let page = 1; page <= pages; page++) {
@@ -189,7 +211,7 @@ export default function SyncScreen({ navigation, route }) {
           });
         }
 
-        bulkInsert("accounts", objectArray);
+        await bulkInsert("accounts", objectArray);
       } else {
         setErrorSync(data.message);
         return;
@@ -199,7 +221,7 @@ export default function SyncScreen({ navigation, route }) {
     updateStatus("proveedores");
 
     //Articulos
-    Product.destroyAll();
+    await Product.destroyAll();
     pages = 150;
 
     for (let page = 1; page <= pages; page++) {
@@ -237,7 +259,7 @@ export default function SyncScreen({ navigation, route }) {
             objectArray.push(props);
           });
         }
-        bulkInsert("products", objectArray);
+        await bulkInsert("products", objectArray);
       } else {
         setErrorSync(data.message);
         return;
@@ -251,6 +273,12 @@ export default function SyncScreen({ navigation, route }) {
     }
     } catch (e) {
       setErrorSync(e?.message || "Error en la sincronizacion.");
+    } finally {
+      try {
+        await Configuration.setConfigValue("SYNC_IN_PROGRESS", 0);
+      } catch (e) {
+        // ignore
+      }
     }
   }
 
@@ -312,14 +340,16 @@ export default function SyncScreen({ navigation, route }) {
         El proceso de sincronización, descargará la información de vendedores, articulos, proveedores y rubros. Este proceso puede demorar varios
         minutos, dependiendo de la cantidad de registros y su conexión a internet.
       </Text>
-      <Image style={[syncStyle.image]} source={iconSync} />
+
 
       {/* {!netInfo.isConnected && <Text style={{ marginBottom: 10, color: "red" }}>No dispone de conexión a internet</Text>} */}
 
       {showButtonSync ? (
-        <TouchableOpacity activeOpacity={.7} style={[syncStyle.btnSync]} onPress={syncData}>
-          {/* <TouchableOpacity activeOpacity={.7} disabled={!netInfo.isConnected} style={[syncStyle.btnSync]} onPress={syncData}> */}
-          <Text style={[syncStyle.textBtnSync]}>Sincronizar</Text>
+        <TouchableOpacity activeOpacity={0.8} style={syncStyle.cardButton} onPress={syncData}>
+          <View style={syncStyle.cardIconWrap}>
+            <Image style={syncStyle.cardIcon} source={iconSync} />
+          </View>
+          <Text style={syncStyle.cardText}>Sincronizar</Text>
         </TouchableOpacity>
       ) : errorSync ? (
         <Text style={[syncStyle.errorMessage]}>{errorSync}</Text>

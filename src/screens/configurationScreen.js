@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import SafeAreaView from "react-native-safe-area-view";
 
 import { ConfigStyles } from "@styles/ConfigurationStyle";
@@ -7,8 +7,9 @@ import { ConfigStyles } from "@styles/ConfigurationStyle";
 import ConfigItem from "@components/ConfigItem";
 
 import Configuration from "@db/Configuration";
-import { bulkInsert } from "@db/Functions";
 import { restartTables } from "../services/db";
+import iconSave from "@icons/ok.png";
+import iconSync from "@icons/sync.png";
 
 export default function ConfigurationScreen({ navigation, route }) {
 
@@ -16,9 +17,11 @@ export default function ConfigurationScreen({ navigation, route }) {
 
   const [config, setConfig] = useState({
     API_URI: "http://alfanetac.ddns.net:7705/api/v2/",
+    //API_URI: 'http://192.168.1.36:5000/api/v2/',
     API_KEY: "",
     ALFA_ACCOUNT: "112010001",
-    ALFA_DATABASE_ID: "156",
+    //ALFA_DATABASE_ID: "156",
+    ALFA_DATABASE_ID: "3239",
     USERNAME_SYNC: "Administrador",
     PASSWORD_SYNC: "1",
     MODIFICA_CLASE_PRECIO: false,
@@ -65,32 +68,26 @@ export default function ConfigurationScreen({ navigation, route }) {
   };
 
   const handleSave = async () => {
-    let values = [];
     setSaving(true);
 
     try {
-      await Configuration.destroyAll();
-    } catch (e) {
-      setSaving(false);
-      setShowText(e?.message || "Error al borrar configuración.");
-      return;
-    }
-
-    let props = {};
-
-    for (let item in config) {
-      props = {
-        key: item,
-        value: item == "API_URI" ? config[item].toLowerCase() : config[item],
-      };
-      values.push(props);
-    }
-
-    try {
-      await await bulkInsert("config", values);
+      await Configuration.createTable();
+      for (let item in config) {
+        let value = config[item];
+        if (typeof value === "boolean") {
+          value = value ? 1 : 0;
+        }
+        if (value === null || value === undefined) {
+          value = "";
+        }
+        if (item == "API_URI" && typeof value === "string") {
+          value = value.toLowerCase();
+        }
+        await Configuration.setConfigValue(item, value);
+      }
       setShowText("Grabado correctamente");
     } catch (e) {
-      setShowText(e?.message || "Error al grabar configuración.");
+      setShowText(e?.message || "Error al grabar configuraciÃ³n.");
     } finally {
       setSaving(false);
     }
@@ -259,6 +256,7 @@ export default function ConfigurationScreen({ navigation, route }) {
 
             {!firstIn && (
               <TouchableOpacity style={[ConfigStyles.buttonRestartTables]} onPress={() => showAlert()}>
+                <Image source={iconSync} style={ConfigStyles.buttonIcon} />
                 <Text style={[ConfigStyles.buttonRestartTablesText]}>Reiniciar tablas</Text>
               </TouchableOpacity>
             )}
@@ -272,6 +270,7 @@ export default function ConfigurationScreen({ navigation, route }) {
               style={[ConfigStyles.buttonSave]}
               onPress={() => handleSave()}
             >
+              <Image source={iconSave} style={ConfigStyles.buttonIcon} />
               <Text style={[ConfigStyles.buttonSaveText]}>Grabar</Text>
             </TouchableOpacity>
             {saving ? (

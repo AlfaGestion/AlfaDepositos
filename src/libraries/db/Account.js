@@ -41,7 +41,7 @@ export default class Account extends BaseModel {
 
     let where;
 
-    if (onlyAccountOfSeller == 1) {
+    if (onlyAccountOfSeller == 1 && seller) {
       if (name != "") {
         where = ` where id_seller='${seller}' and (name like '%${name.toLowerCase()}%' or code like '%${name.toLowerCase()}%')`;
       } else {

@@ -12,11 +12,13 @@ import {
 } from "react-native";
 import SafeAreaView from "react-native-safe-area-view";
 import { CameraView, useCameraPermissions } from "expo-camera";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 import ProductItem from "@components/ProductItem";
 import Product from "@db/Product"; // Tu modelo de base de datos
 import { listProductsStyles } from "@styles/ProductStyle";
 import Colors from "@styles/Colors";
+import Configuration from "@db/Configuration";
 
 export default function Products({ navigation }) {
   // Estados de datos
@@ -24,18 +26,31 @@ export default function Products({ navigation }) {
   const [empty, setEmpty] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
+  const [loadImages, setLoadImages] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Estados del Escáner
   const [permission, requestPermission] = useCameraPermissions();
-  const hasPermission = permission?.granted ?? false;
   const [scannerVisible, setScannerVisible] = useState(false);
   
   const refInput = useRef();
+  const scanningRef = useRef(false);
 
   // 1. Permisos y Carga Inicial
   useEffect(() => {
+    loadConfiguration();
     loadProducts("", false); // Carga inicial de los primeros 20
   }, []);
+
+  const loadConfiguration = async () => {
+    try {
+      await Configuration.createTable();
+      const value = await Configuration.getConfigValue("CARGA_IMAGENES");
+      setLoadImages(value == '1');
+    } catch (e) {
+      setLoadImages(false);
+    }
+  };
 
   // 2. Función Maestra de Búsqueda (Combinada)
   const loadProducts = async (text = "", isSearch = false) => {
@@ -68,39 +83,72 @@ export default function Products({ navigation }) {
     } catch (error) {
       console.error("Error cargando productos:", error);
       Alert.alert("Error", "No se pudo consultar la base de datos.");
+      // Si falla, reiniciamos la pantalla completa
+      setProducts([]);
+      setEmpty(false);
+      setSearchText("");
+      setRefreshKey((k) => k + 1);
+      setTimeout(() => {
+        loadProducts("", false);
+      }, 0);
     } finally {
       setIsLoading(false);
     }
   };
 
   // 3. Manejadores de Eventos
-  const handleBarCodeScanned = ({ data }) => {
+  const handleBarCodeScanned = async ({ data }) => {
+    if (scanningRef.current) return;
+    scanningRef.current = true;
     setScannerVisible(false);
-    // Al escanear, ejecutamos la búsqueda exacta inmediatamente
-    loadProducts(data, true);
+    try {
+      setSearchText(data);
+      // Al escanear, ejecutamos la búsqueda exacta inmediatamente
+      await loadProducts(data, true);
+    } finally {
+      scanningRef.current = false;
+    }
+  };
+
+  const ensureCameraPermission = async () => {
+    if (permission?.granted) return true;
+    const result = await requestPermission();
+    if (result?.granted) return true;
+    const message = result?.canAskAgain
+      ? "Debes permitir el acceso a la cámara para escanear."
+      : "Permiso de cámara denegado. Habilitalo desde los ajustes.";
+    Alert.alert("Sin acceso", message);
+    return false;
   };
 
   const onChangeSearchText = (text) => {
     setSearchText(text);
-    // Búsqueda reactiva por nombre (mínimo 3 caracteres)
-    if (text.length >= 3 || text.length === 0) {
-      loadProducts(text, true);
+    if (text.length === 0) {
+      loadProducts("", false);
+      return;
     }
+    loadProducts(text, true);
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#E7F1F9" }} key={refreshKey}>
       {/* --- MODAL DEL ESCÁNER --- */}
       <RNModal visible={scannerVisible} animationType="slide">
         <View style={styles.scannerContainer}>
           <CameraView
             onBarcodeScanned={scannerVisible ? handleBarCodeScanned : undefined}
+            barcodeScannerSettings={{
+              barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "code128", "code39", "code93", "qr"],
+            }}
             style={StyleSheet.absoluteFillObject}
           />
           <View style={styles.overlay}>
             <Text style={styles.scanText}>Encuadre el código de barras</Text>
             <TouchableOpacity 
-              onPress={() => setScannerVisible(false)} 
+              onPress={() => {
+                scanningRef.current = false;
+                setScannerVisible(false);
+              }} 
               style={styles.closeButton}
             >
               <Text style={{ color: 'white', fontWeight: 'bold' }}>CANCELAR</Text>
@@ -123,13 +171,14 @@ export default function Products({ navigation }) {
         />
         
         <TouchableOpacity 
-          onPress={() => {
-            if (hasPermission) setScannerVisible(true);
-            else Alert.alert("Sin acceso", "Debes habilitar los permisos de cámara.");
+          onPress={async () => {
+            if (await ensureCameraPermission()) {
+              setScannerVisible(true);
+            }
           }}
           style={styles.cameraIcon}
         >
-          <Text style={{ fontSize: 26 }}>📷</Text>
+          <Ionicons name="camera-outline" size={24} color={Colors.DBLUE} />
         </TouchableOpacity>
       </View>
 
@@ -156,6 +205,7 @@ export default function Products({ navigation }) {
               code={item.code}
               navigation={navigation}
               id={item.id}
+              cancelaCarga={!loadImages}
             />
           )}
         />
@@ -180,6 +230,7 @@ const styles = StyleSheet.create({
     padding: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'transparent',
   },
   scannerContainer: {
     flex: 1,

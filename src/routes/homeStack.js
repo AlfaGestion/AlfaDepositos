@@ -29,18 +29,19 @@ import OrderTabNavigator from "../routes/OrderTabNavigator"; // Si este es un ta
 import OrderViewTab from './OrderViewTab';
 import CartProviderContainer from './CartProviderContainer';
 import CartStockContainer from './CartStockContainer';
-import { CartProvider } from '@hooks/useCart'; // Asegúrate de importar el Provider real
+import Colors from '@styles/Colors';
+import { Fonts } from '@styles/Theme';
 
 const Stack = createStackNavigator();
 
 const HomeStack = () => (
   <NavigationContainer>
-    <CartProvider>
       <Stack.Navigator
         initialRouteName="HomeScreen"
         screenOptions={{
-          headerTintColor: "#444",
-          headerStyle: { backgroundColor: "#e1e1e1" },
+          headerTintColor: Colors.DGREY,
+          headerStyle: { backgroundColor: Colors.SURFACE },
+          headerTitleStyle: { fontFamily: Fonts.display, letterSpacing: 0.4 },
         }}
       >
         <Stack.Screen
@@ -168,7 +169,6 @@ const HomeStack = () => (
           options={{ title: "Nuevo proveedor" }}
         />
       </Stack.Navigator>
-    </CartProvider>
   </NavigationContainer>
 );
 
