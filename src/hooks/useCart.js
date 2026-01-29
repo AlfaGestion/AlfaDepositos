@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+﻿import React, { createContext, useContext, useEffect, useState } from 'react';
 // import { useNetInfo } from "@react-native-community/netinfo";
 import Order from "@db/Order";
 import OrderDetail from "@db/OrderDetail";
@@ -24,7 +24,7 @@ export const CartProvider = ({ children }) => {
     const [account, setAccount] = useState(
         orderMode == 'COMPRAS' ? {
             code: 2111010289,
-            name: 'Depósito general',
+            name: 'DepÃ³sito general',
             priceClass: 1,
             lista: 1
         } : null
@@ -38,6 +38,7 @@ export const CartProvider = ({ children }) => {
         typeDocument: orderMode == 'COMPRAS' ? 'RP' : 'IR',
         saleCondition: 'ctacte'
     })
+    const [observation, setObservation] = useState("")
     const [editId, setEditId] = useState(null)
     const [isEditorder, setIsEditOrder] = useState(false)
 
@@ -56,14 +57,26 @@ export const CartProvider = ({ children }) => {
     useEffect(() => {
         if (orderMode == 'COMPRAS') {
             setAccount(null)
+            setDocumentData({
+                invoiceType: '',
+                typeDocument: 'RP',
+                saleCondition: ''
+            })
         } else if (orderMode == 'INVENTARIO') {
             setAccount({
                 code: 2111010289,
-                name: 'Depósito general',
+                name: 'DepÃ³sito general',
                 priceClass: 1,
                 lista: 1
             })
+            setDocumentData({
+                invoiceType: '',
+                typeDocument: 'IR',
+                saleCondition: ''
+            })
         }
+        setIsEditOrder(false)
+        setEditId(null)
     }, [orderMode])
 
     useEffect(() => {
@@ -110,6 +123,7 @@ export const CartProvider = ({ children }) => {
             typeDocument: order?.tc,
             saleCondition: order?.condition
         })
+        setObservation(order?.obs || "")
 
         const orderItems = await OrderDetail.findByIdOrder(orderId)
         orderItems.forEach(async (item) => {
@@ -149,7 +163,7 @@ export const CartProvider = ({ children }) => {
         // if (esCpteElectronico && !netInfo.isConnected) {
         // if (esCpteElectronico && !netInfo.isConnected) {
         //     setIsSaving(false)
-        //     setStatus({ error: true, message: "No hay conexión a internet" })
+        //     setStatus({ error: true, message: "No hay conexiÃ³n a internet" })
         //     return
         // }
 
@@ -181,7 +195,7 @@ export const CartProvider = ({ children }) => {
             condition: documentData?.saleCondition || null,
             cpte: documentData?.invoiceType || null,
             tc: documentData?.typeDocument || null,
-            obs: ''
+            obs: observation || ''
             // obs: !netInfo.isConnected ? "No se valido stock por falta de conexion" : ""
         };
 
@@ -426,6 +440,11 @@ export const CartProvider = ({ children }) => {
         setAccount(null)
     }
 
+    const resetEditState = () => {
+        setIsEditOrder(false)
+        setEditId(null)
+    }
+
 
     const passValidations = async (product) => {
         if (noPermiteDuplicarItem) {
@@ -448,7 +467,7 @@ export const CartProvider = ({ children }) => {
         return true
     }
 
-    // Agregar un producto al carrito (actualiza la cantidad si ya está en el carrito)
+    // Agregar un producto al carrito (actualiza la cantidad si ya estÃ¡ en el carrito)
     const addToCart = (product, quantity = 1, disc = 0, bultos = 0, newPrice = 0, sumProductToExisting = true) => {
         // console.log("s", product)
         setCartItems((prevItems) => {
@@ -475,7 +494,7 @@ export const CartProvider = ({ children }) => {
                 }
 
                 // console.log(sumProductToExisting)
-                // Si el producto ya está en el carrito, actualizamos la cantidad
+                // Si el producto ya estÃ¡ en el carrito, actualizamos la cantidad
                 return prevItems.map(item =>
                     item.id === product.id
                         ? {
@@ -489,7 +508,7 @@ export const CartProvider = ({ children }) => {
                 );
             } else {
                 // console.log(product)
-                // Si no está en el carrito, lo agregamos con una cantidad de 1
+                // Si no estÃ¡ en el carrito, lo agregamos con una cantidad de 1
                 return [...prevItems, { ...product, bultos: bultos, priceWithDiscount: priceWithDiscount, quantity: parseInt(quantity), disc: disc, alicIva: (parseInt(product?.iva) == 0 || product?.iva == null) ? 21 : product?.iva }];
             }
         });
@@ -615,6 +634,9 @@ export const CartProvider = ({ children }) => {
 
         setAccount(null)
         setCartItems([])
+        setIsEditOrder(false)
+        setEditId(null)
+        setObservation("")
     }
 
     // Calcular el total de la compra (suma de precios * cantidades)
@@ -669,7 +691,7 @@ export const CartProvider = ({ children }) => {
         return detalleIvas
     }
 
-    // Obtener el total de artículos en el carrito
+    // Obtener el total de artÃ­culos en el carrito
     const getTotalItems = () => {
         return cartItems.reduce((total, item) => total + item.quantity, 0);
     };
@@ -680,7 +702,7 @@ export const CartProvider = ({ children }) => {
     };
 
     return (
-        <CartContext.Provider value={{ setOrderMode, orderMode, noPermiteDuplicarItem, account, getItem, getTotalDiscount, passValidations, deleteOrder, isLoading, loadImages, isEditorder, loadEditOrder, isSaving, removeAccount, status, save, documentData, setPriceClass, setInvoiceType, setTypeDocument, setSaleCondition, getDetalleIva, addAccount, getSubtotal, getCurrentQuantity, cartItems, addToCart, addManyToCart, removeFromCart, decreaseQuantity, clearCart, getTotal, getTotalItems, globalPriceClass, setGlobalPriceClass }}>
+        <CartContext.Provider value={{ observation, setObservation, restartCart, resetEditState, setOrderMode, orderMode, noPermiteDuplicarItem, account, getItem, getTotalDiscount, passValidations, deleteOrder, isLoading, loadImages, isEditorder, loadEditOrder, isSaving, removeAccount, status, save, documentData, setPriceClass, setInvoiceType, setTypeDocument, setSaleCondition, getDetalleIva, addAccount, getSubtotal, getCurrentQuantity, cartItems, addToCart, addManyToCart, removeFromCart, decreaseQuantity, clearCart, getTotal, getTotalItems, globalPriceClass, setGlobalPriceClass }}>
             {children}
         </CartContext.Provider>
     );
@@ -688,3 +710,6 @@ export const CartProvider = ({ children }) => {
 
 // Hook para usar el contexto del carrito
 export const useCart = () => useContext(CartContext);
+
+
+

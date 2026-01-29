@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import ModalItem from './ModalItem';
 import ProductImage from '../ProductImage';
 
-export default function ItemCart({ item, priceClass }) {
+export default function ItemCart({ item, priceClass, showImage = true, compact = false }) {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const { addToCart, noPermiteDuplicarItem, decreaseQuantity, loadImages, getCurrentQuantity, removeFromCart, setGlobalPriceClass } = useCart();
 
@@ -19,38 +19,49 @@ export default function ItemCart({ item, priceClass }) {
     const priceToShow = item[priceKey] ?? 0;
     const quantity = getCurrentQuantity(item.code);
 
+    const imageSize = compact ? 46 : 80;
+    const rightPadding = compact ? 6 : 0;
+    const nameSize = compact ? 14 : 16;
+    const priceSize = compact ? 16 : 20;
+    const codeSize = compact ? 11 : 12;
+    const rowPadding = compact ? 6 : 1;
+    const actionFont = compact ? 12 : 14;
+    const qtyFont = compact ? 16 : 20;
+    const btnPadding = compact ? 8 : 15;
+
     return (
-        <TouchableOpacity onPress={() => setIsModalVisible(true)} style={{ marginBottom: 10, backgroundColor: "white", flexDirection: "row", paddingHorizontal: 1 }}>
+        <TouchableOpacity onPress={() => setIsModalVisible(true)} style={{ marginBottom: 8, backgroundColor: "white", flexDirection: "row", paddingHorizontal: rowPadding }}>
             <ModalItem isVisible={isModalVisible} setIsVisible={setIsModalVisible} item={item} />
 
-            <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                {/* <Image source={imgProduct}></Image> */}
-                <ProductImage cancelaCarga={!loadImages} fileName={item?.code} widthImage={80} heightImage={80} />
+            {showImage && (
+                <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                    {/* <Image source={imgProduct}></Image> */}
+                    <ProductImage cancelaCarga={!loadImages} fileName={item?.code} widthImage={imageSize} heightImage={imageSize} />
+                </View>
+            )}
 
-            </View>
-
-            <View style={{ flex: 3, paddingVertical: 4 }}>
-                <Text style={{ fontSize: getFontSize(12) }}>#{item?.code}</Text>
-                <Text style={{ fontSize: getFontSize(16) }}>{item?.name}</Text>
-                <Text style={{ fontSize: getFontSize(20), fontWeight: "600" }}>$ {priceToShow}</Text>
+            <View style={{ flex: showImage ? 3 : 4, paddingVertical: 4, paddingRight: rightPadding }}>
+                <Text style={{ fontSize: getFontSize(codeSize) }}>#{item?.code}</Text>
+                <Text style={{ fontSize: getFontSize(nameSize) }}>{item?.name}</Text>
+                <Text style={{ fontSize: getFontSize(priceSize), fontWeight: "600" }}>$ {priceToShow}</Text>
 
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: quantity > 0 ? "space-between" : "flex-end" }}>
                     {quantity > 0 && (
-                        <TouchableOpacity onPress={() => removeFromCart(item.code)} style={{ backgroundColor: "red", paddingHorizontal: 10, paddingVertical: 2, borderRadius: 5 }}>
-                            <Text style={{ fontSize: getFontSize(14), color: "white" }}>Eliminar</Text>
+                        <TouchableOpacity onPress={() => removeFromCart(item.code)} style={{ backgroundColor: "red", paddingHorizontal: compact ? 8 : 10, paddingVertical: 2, borderRadius: 5 }}>
+                            <Text style={{ fontSize: getFontSize(actionFont), color: "white" }}>Eliminar</Text>
                         </TouchableOpacity>
                     )}
 
                     {!noPermiteDuplicarItem ?
                         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", marginRight: 10, paddingVertical: 5 }}>
                             <TouchableOpacity onPress={() => decreaseQuantity(item.code)} style={{ borderWidth: 1, borderColor: "gray", borderRadius: 20 }}>
-                                <Text style={{ paddingHorizontal: 15, fontWeight: "bold", paddingVertical: 5, fontSize: getFontSize(20) }}>-</Text>
+                                <Text style={{ paddingHorizontal: btnPadding, fontWeight: "bold", paddingVertical: 5, fontSize: getFontSize(qtyFont) }}>-</Text>
                             </TouchableOpacity>
 
-                            <Text style={{ fontSize: getFontSize(20), textAlign: "center", fontWeight: "bold", paddingHorizontal: 10, minWidth: 70 }}>{quantity}</Text>
+                            <Text style={{ fontSize: getFontSize(qtyFont), textAlign: "center", fontWeight: "bold", paddingHorizontal: 10, minWidth: compact ? 48 : 70 }}>{quantity}</Text>
 
                             <TouchableOpacity onPress={() => addToCart(item, 1, 0, priceClass)} style={{ borderWidth: 1, borderColor: "gray", borderRadius: 20 }}>
-                                <Text style={{ paddingHorizontal: 15, paddingVertical: 5, fontWeight: "bold", fontSize: getFontSize(20) }}>+</Text>
+                                <Text style={{ paddingHorizontal: btnPadding, paddingVertical: 5, fontWeight: "bold", fontSize: getFontSize(qtyFont) }}>+</Text>
                             </TouchableOpacity>
                         </View>
                         :

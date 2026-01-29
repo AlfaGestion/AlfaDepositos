@@ -1,11 +1,7 @@
-import { useContext, useEffect, useState } from "react";
-import { Alert, Text, TouchableOpacity, View } from "react-native";
+﻿import { useContext, useEffect, useState } from "react";
+import { Alert, Text, TextInput, TouchableOpacity, View } from "react-native";
 import SafeAreaView from "react-native-safe-area-view";
 
-import DropdownPriceClass from "@components/DropdownPriceClass";
-import DropdownSaleCondition from "@components/DropdownSaleCondition";
-import DropdownInvoiceType from "@components/DropdownInvoiceType";
-import DropdownTypeDocumentStock from "@components/DropdownTypeDocumentStock";
 
 import { newOrderStyles } from "@styles/OrderStyle";
 
@@ -47,7 +43,7 @@ export default function NewStockScreen({ route }) {
   const [errorCpte, setErrorCpte] = useState(null)
   const [currentAccount, setCurrentAccount] = useState({
     code: 2111010289,
-    name: 'Depósito general',
+    name: 'DepÃ³sito general',
     priceClass: 1,
     lista: 1
   });
@@ -56,6 +52,7 @@ export default function NewStockScreen({ route }) {
   const [typeDocument, setTypeDocument] = useState("IR");
   const [saleCondition, setSaleCondition] = useState(null);
   const [typeInvoice, setTypeInvoice] = useState(null);
+  const [observation, setObservation] = useState("");
 
   const [products, setProducts] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -267,7 +264,7 @@ export default function NewStockScreen({ route }) {
   }
 
   const handleDeleteOrder = () => {
-    return Alert.alert("¿Eliminar?", "¿Está seguro que desea eliminar el pedido? No podrá recuperarlo.", [
+    return Alert.alert("Â¿Eliminar?", "Â¿EstÃ¡ seguro que desea eliminar el pedido? No podrÃ¡ recuperarlo.", [
       {
         text: "Si",
         onPress: () => {
@@ -295,7 +292,7 @@ export default function NewStockScreen({ route }) {
     const esCpteElectronico = (typeDocument == 'eFC' || typeDocument == 'eNC' || typeDocument == 'eND')
 
     // if (esCpteElectronico && !netInfo.isConnected) {
-    //   setErrorCpte("No hay conexión a internet.")
+    //   setErrorCpte("No hay conexiÃ³n a internet.")
     //   return
     // }
 
@@ -339,7 +336,7 @@ export default function NewStockScreen({ route }) {
       condition: saleCondition || null,
       cpte: typeInvoice || null,
       tc: typeDocument || null,
-      obs: ''// !netInfo.isConnected ? "No se valido stock por falta de conexion" : ""
+      obs: observation || ''// !netInfo.isConnected ? "No se valido stock por falta de conexion" : ""
     };
 
     if (isEditOrder) {
@@ -411,108 +408,73 @@ export default function NewStockScreen({ route }) {
       ></ModalMessage>
 
 
-      {currentAccount.code == "" && id == null ? (
-        <AccountListSearch handleSelAccount={handleSelAccount} />
-      ) : (
-        <View>
-          <View style={[newOrderStyles.containerButtons]}>
+      <View>
+        <View style={{ paddingHorizontal: 10, paddingTop: 6, paddingBottom: 6 }}>
+          <Text style={{ color: "#6b7280", fontSize: 13 }}>Cargando información de inventario</Text>
+        </View>
+        <View style={[newOrderStyles.containerButtons]}>
+          <TouchableOpacity
+            onPress={() => {
+              handleSaveOrder();
+            }}
+            style={{ ...newOrderStyles.btnOptions, ...newOrderStyles.btnSave }}
+          >
+            <Entypo name="save" color="white" size={18} />
+            <Text style={[newOrderStyles.textBtnOptions]}>Grabar</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => {
+              handleSaveOrder(true);
+            }}
+            style={{ ...newOrderStyles.btnOptions, ...newOrderStyles.btnSave }}
+          >
+            <AntDesign name="sharealt" color="white" size={18} />
+            <Text style={[newOrderStyles.textBtnOptions]}>Grabar y compartir</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{ ...newOrderStyles.btnOptions, ...newOrderStyles.btnCancel }}
+          >
+            <MaterialIcons name="cancel" size={18} color="white" />
+            <Text style={[newOrderStyles.textBtnOptions]}>Cancelar</Text>
+          </TouchableOpacity>
+        </View>
+
+        {isEditOrder && (
+          <View style={[newOrderStyles.containerEditButtons]}>
             <TouchableOpacity
-              onPress={() => {
-                handleSaveOrder();
-              }}
-              style={{ ...newOrderStyles.btnOptions, ...newOrderStyles.btnSave }}
+              onPress={() => handleDeleteOrder()}
+              style={{ ...newOrderStyles.btnCancel, ...newOrderStyles.btnDeleteOrder }}
             >
-              <Entypo name="save" color="white" size={18} />
-              <Text style={[newOrderStyles.textBtnOptions]}>Grabar</Text>
+              <AntDesign name="delete" size={20} color="white" />
+              <Text style={[newOrderStyles.textBtnOptions]}>Eliminar pedido</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              onPress={() => {
-                handleSaveOrder(true);
-              }}
-              style={{ ...newOrderStyles.btnOptions, ...newOrderStyles.btnSave }}
+            {/* <TouchableOpacity
+              onPress={() => handleSaveOrder(false, true)}
+              style={{ ...newOrderStyles.btnCancel, ...newOrderStyles.btnDeleteOrder, marginTop: 10, backgroundColor: "blue" }}
             >
-              <AntDesign name="sharealt" color="white" size={18} />
-              <Text style={[newOrderStyles.textBtnOptions]}>Grabar y compartir</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={{ ...newOrderStyles.btnOptions, ...newOrderStyles.btnCancel }}
-            >
-              <MaterialIcons name="cancel" size={18} color="white" />
-              <Text style={[newOrderStyles.textBtnOptions]}>Cancelar</Text>
-            </TouchableOpacity>
+              <AntDesign name="printer" size={20} color="white" />
+              <Text style={[newOrderStyles.textBtnOptions]}>Imprimir</Text>
+            </TouchableOpacity> */}
           </View>
+        )}
 
-          {isEditOrder && (
-            <View style={[newOrderStyles.containerEditButtons]}>
-              <TouchableOpacity
-                onPress={() => handleDeleteOrder()}
-                style={{ ...newOrderStyles.btnCancel, ...newOrderStyles.btnDeleteOrder }}
-              >
-                <AntDesign name="delete" size={20} color="white" />
-                <Text style={[newOrderStyles.textBtnOptions]}>Eliminar pedido</Text>
-              </TouchableOpacity>
-
-              {/* <TouchableOpacity
-                onPress={() => handleSaveOrder(false, true)}
-                style={{ ...newOrderStyles.btnCancel, ...newOrderStyles.btnDeleteOrder, marginTop: 10, backgroundColor: "blue" }}
-              >
-                <AntDesign name="printer" size={20} color="white" />
-                <Text style={[newOrderStyles.textBtnOptions]}>Imprimir</Text>
-              </TouchableOpacity> */}
-            </View>
-          )}
-
-          <View style={[newOrderStyles.containerSelAccount]}>
-            {!isEditOrder && (
-              <TouchableOpacity
-                style={[newOrderStyles.btnCancelAccount]}
-                onPress={() => {
-                  setAccount({
-                    code: "",
-                    name: "",
-                  });
-                }}
-              >
-                <Text style={[newOrderStyles.textBtnCancelAccount]}>X</Text>
-              </TouchableOpacity>
-            )}
-            <Text>{currentAccount.code}</Text>
-            <Text>
-              {currentAccount.name} (Clase {priceClass})
-            </Text>
-          </View>
-
-          <View style={[newOrderStyles.searchProducts, { zIndex: 99 }]}>
-            <View style={{ zIndex: 999999999999 }}>
-              <DropdownPriceClass priceClass={priceClass} setPriceClass={setPriceClass} />
-            </View>
-
-            <View style={{ zIndex: 999999999999 }}>
-              {(typeDocument == 'eFC' || typeDocument == 'eNC' || typeDocument == 'eND') &&
-                <View style={{ width: "100%", backgroundColor: "orange", marginBottom: 5, textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Text style={{ fontSize: 12 }}>Requiere conexión a internet</Text>
-                </View>
-              }
-              <DropdownTypeDocumentStock value={typeDocument} setValue={setTypeDocument} />
-            </View>
-
-            <View style={{ flexDirection: "row", gap: 10, width: "100%", alignItems: "center", justifyContent: "space-between" }}>
-
-              <View style={{ width: `${typeDocument == 'NP' ? '48%' : '100%'}` }}>
-                <DropdownSaleCondition value={saleCondition} setValue={setSaleCondition} />
-              </View>
-              {typeDocument == 'NP' &&
-                <View style={{ width: "48%" }}>
-                  <DropdownInvoiceType value={typeInvoice} setValue={setTypeInvoice} />
-                </View>
-              }
-            </View>
+        <View style={[newOrderStyles.searchProducts, { zIndex: 99 }]}>
+          <View style={{ zIndex: 999999999999 }}>
+            <Text style={newOrderStyles.observationLabel}>Observación</Text>
+            <TextInput
+              value={observation}
+              onChangeText={setObservation}
+              placeholder="Escribí una observación..."
+              multiline={true}
+              style={newOrderStyles.observationInput}
+            />
           </View>
         </View>
-      )}
+      </View>
 
 
 
@@ -535,3 +497,4 @@ export default function NewStockScreen({ route }) {
     </SafeAreaView>
   );
 }
+
