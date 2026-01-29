@@ -118,15 +118,48 @@ export default function SendPendingsScreen({ navigation }) {
           dto: det.discount_perc,
           total: det.total,
         });
-
-        // console.log(detailSend)
       }
 
-      // console.log(item)
+      const isInventory = item?.tc === "IR";
+
+      if (isInventory) {
+        const inventoryPayload = {
+          observacion: item.obs || "",
+          items: detailSend.map((det) => ({
+            idarticulo: det.product,
+            idunidad: "",
+            conteo1: det.quantity,
+            costo: det.amount,
+          })),
+        };
+
+        detailSend = [];
+        try {
+          const response = await setDataToApi("inventario/", JSON.stringify(inventoryPayload));
+
+          if (!response.error) {
+            try {
+              await Order.destroy(item.id);
+              await OrderDetail.deleteItemsByOrderId(item.id);
+            } catch (e) {
+              setShowError("Error al eliminar los comprobantes enviados. No envie nuevamente por que se duplicarian. : " + e);
+              return true;
+            }
+          } else {
+            console.log("[SYNC][inventario] response error", response);
+            setShowError("Ocurrio un error al enviar el inventario: " + (response.message || "Error desconocido"));
+            return true;
+          }
+        } catch (error) {
+          setShowError("Ocurrio un error al enviar el inventario: " + error);
+          return true;
+        }
+        continue;
+      }
 
       ordersSend.push({
         id: item.id,
-        account: item.account,
+        account: item.account,
         date: item.date,
         total_net: item.net,
         total: item.total,
@@ -153,16 +186,16 @@ export default function SendPendingsScreen({ navigation }) {
 
             ordersSend = [];
           } catch (e) {
-            setShowError("Error al eliminar los comprobantes enviados. No envie nuevamente por que se duplicarÃ­an. : " + e);
+            setShowError("Error al eliminar los comprobantes enviados. No envie nuevamente por que se duplicarian. : " + e);
             return true;
           }
         } else {
           console.log("[SYNC][orders] response error", response);
-          setShowError("OcurriÃ³ un error al enviar los comprobantes: " + (response.message || "Error desconocido"));
+          setShowError("Ocurrio un error al enviar los comprobantes: " + (response.message || "Error desconocido"));
           return true;
         }
       } catch (error) {
-        setShowError("OcurriÃ³ un error al enviar los comprobantes: " + error);
+        setShowError("Ocurrio un error al enviar los comprobantes: " + error);
         return true;
       }
     }
@@ -170,7 +203,6 @@ export default function SendPendingsScreen({ navigation }) {
     setShowLoaderOrders(false);
     return false;
   };
-
   const _sendPayments = async () => {
     let payments = await Payment.query();
     let paymentsSend = [];

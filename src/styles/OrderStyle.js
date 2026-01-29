@@ -185,6 +185,23 @@ const newOrderStyles = StyleSheet.create({
     marginBottom: 10,
     borderColor: Colors.GREY,
   },
+  observationLabel: {
+    fontSize: 12,
+    color: Colors.DGREY,
+    marginBottom: 6,
+    marginLeft: 4,
+  },
+  observationInput: {
+    borderWidth: 1,
+    borderColor: Colors.GREY,
+    backgroundColor: Colors.WHITE,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 56,
+    textAlignVertical: "top",
+    marginBottom: 10,
+  },
   containerButtons: {
     flexDirection: "row",
     justifyContent: "space-between",

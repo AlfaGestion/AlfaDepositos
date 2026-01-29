@@ -1,15 +1,17 @@
 import { useCart } from '@hooks/useCart';
 import { useEffect } from 'react';
-import { ActivityIndicator, Button, FlatList, Text, TouchableOpacity, View, Alert } from 'react-native';
+import { ActivityIndicator, Button, FlatList, Text, TextInput, TouchableOpacity, View, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ItemResumeCart from '../../components/Cart/ItemResumeCart';
 import Colors from '../../styles/Colors';
 import { getFontSize } from '../../utils/Metrics';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 export default function ResumeCartScreen({ jumpTo }) {
     // const [estado, setEstado] = useState({ error: false, message: null })
-    const { cartItems, getTotal, getSubtotal, account, getDetalleIva, save, getTotalDiscount, status, isSaving } = useCart();
+    const { cartItems, getTotal, getSubtotal, account, getDetalleIva, save, getTotalDiscount, status, isSaving, observation, setObservation, getTotalItems } = useCart();
     const navigation = useNavigation();
+    const route = useRoute();
+    const isInventory = route?.params?.mode === "INVENTARIO";
     const insets = useSafeAreaInsets();
 
     const formatAmount = (value) => {
@@ -76,14 +78,37 @@ export default function ResumeCartScreen({ jumpTo }) {
     }
 
     return (
-        <View style={{ position: "relative", height: "100%" }}>
+        <View style={{ position: "relative", flex: 1 }}>
             {/* <Text>ResumeCartScreen</Text> */}
             <FlatList
-                style={{ backgroundColor: "white", paddingHorizontal: 6, width: "100%" }}
-                ListFooterComponent={<View />}
-                ListFooterComponentStyle={{ height: 200 }}
+                style={{ backgroundColor: "white", paddingHorizontal: 6, width: "100%", flex: 1 }}
+                                contentContainerStyle={{ paddingBottom: 220 + (insets?.bottom || 0) }}
                 scrollEnabled={true}
                 data={cartItems}
+                ListHeaderComponent={
+                    <View style={{ paddingHorizontal: 6, paddingTop: 8, paddingBottom: 6 }}>
+                        <Text style={{ fontSize: getFontSize(12), color: Colors.DGREY, marginBottom: 6, marginLeft: 4 }}>
+                            Observación
+                        </Text>
+                        <TextInput
+                            value={observation}
+                            onChangeText={setObservation}
+                            placeholder="Escribí una observación..."
+                            multiline={true}
+                            style={{
+                                borderWidth: 1,
+                                borderColor: Colors.GREY,
+                                backgroundColor: Colors.WHITE,
+                                borderRadius: 10,
+                                paddingHorizontal: 12,
+                                paddingVertical: 10,
+                                minHeight: 56,
+                                textAlignVertical: "top",
+                                marginBottom: 10,
+                            }}
+                        />
+                    </View>
+                }
                 keyExtractor={(item) => item.code + ""}
                 renderItem={({ item }) => {
                     return (
@@ -97,27 +122,42 @@ export default function ResumeCartScreen({ jumpTo }) {
 
                     {(status?.message && status?.error) && <Text style={{ color: "white", backgroundColor: status?.error ? Colors.RED : Colors.GREEN, width: "100%", textAlign: "center", padding: 5 }}>{status.message}</Text>}
 
-                    <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#D0D7E2", borderBottomWidth: 1, paddingVertical: 4 }}>
-                        <Text style={{ fontSize: getFontSize(14), color: Colors.MUTED }}>SUBTOTAL</Text>
-                        <Text style={{ fontSize: getFontSize(14), color: Colors.DGREY }}>${formatAmount(getSubtotal())}</Text>
-                    </View>
+                    {isInventory ? (
+                        <>
+                            <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#D0D7E2", borderBottomWidth: 1, paddingVertical: 4 }}>
+                                <Text style={{ fontSize: getFontSize(14), color: Colors.MUTED }}>ARTÍCULOS CONTADOS</Text>
+                                <Text style={{ fontSize: getFontSize(14), color: Colors.DGREY }}>{cartItems?.length || 0}</Text>
+                            </View>
+                            <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", paddingTop: 4 }}>
+                                <Text style={{ fontSize: getFontSize(18), fontWeight: "bold", color: Colors.DGREY }}>CANTIDAD TOTAL</Text>
+                                <Text style={{ fontSize: getFontSize(18), fontWeight: "bold", color: Colors.DGREY }}>{getTotalItems()}</Text>
+                            </View>
+                        </>
+                    ) : (
+                        <>
+                            <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#D0D7E2", borderBottomWidth: 1, paddingVertical: 4 }}>
+                                <Text style={{ fontSize: getFontSize(14), color: Colors.MUTED }}>SUBTOTAL</Text>
+                                <Text style={{ fontSize: getFontSize(14), color: Colors.DGREY }}>${formatAmount(getSubtotal())}</Text>
+                            </View>
 
-                    <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#D0D7E2", borderBottomWidth: 1, paddingVertical: 4 }}>
-                        <Text style={{ fontSize: getFontSize(14), color: Colors.MUTED }}>DESCUENTO</Text>
-                        <Text style={{ fontSize: getFontSize(14), color: Colors.DGREY }}>${formatAmount(getTotalDiscount())}</Text>
-                    </View>
+                            <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#D0D7E2", borderBottomWidth: 1, paddingVertical: 4 }}>
+                                <Text style={{ fontSize: getFontSize(14), color: Colors.MUTED }}>DESCUENTO</Text>
+                                <Text style={{ fontSize: getFontSize(14), color: Colors.DGREY }}>${formatAmount(getTotalDiscount())}</Text>
+                            </View>
 
-                    {getDetalleIva()?.map((item, idx) => (
-                        <View key={`iva_${idx}`} style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#D0D7E2", borderBottomWidth: 1, paddingVertical: 4 }}>
-                            <Text style={{ fontSize: getFontSize(14), color: Colors.MUTED }}>IVA {item.iva}%</Text>
-                            <Text style={{ fontSize: getFontSize(14), color: Colors.DGREY }}>${formatAmount(item.importe)}</Text>
-                        </View>
-                    ))}
+                            {getDetalleIva()?.map((item, idx) => (
+                                <View key={`iva_${idx}`} style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#D0D7E2", borderBottomWidth: 1, paddingVertical: 4 }}>
+                                    <Text style={{ fontSize: getFontSize(14), color: Colors.MUTED }}>IVA {item.iva}%</Text>
+                                    <Text style={{ fontSize: getFontSize(14), color: Colors.DGREY }}>${formatAmount(item.importe)}</Text>
+                                </View>
+                            ))}
 
-                    <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", paddingTop: 4 }}>
-                        <Text style={{ fontSize: getFontSize(18), fontWeight: "bold", color: Colors.DGREY }}>TOTAL</Text>
-                        <Text style={{ fontSize: getFontSize(18), fontWeight: "bold", color: Colors.DGREY }}>${formatAmount(getTotal())}</Text>
-                    </View>
+                            <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", paddingTop: 4 }}>
+                                <Text style={{ fontSize: getFontSize(18), fontWeight: "bold", color: Colors.DGREY }}>TOTAL</Text>
+                                <Text style={{ fontSize: getFontSize(18), fontWeight: "bold", color: Colors.DGREY }}>${formatAmount(getTotal())}</Text>
+                            </View>
+                        </>
+                    )}
                 </View>
 
                 <TouchableOpacity
