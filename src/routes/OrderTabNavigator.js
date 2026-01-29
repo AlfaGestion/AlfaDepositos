@@ -3,6 +3,8 @@ import CartScreen from '../screens/Orders/CartScreen';
 import SelectAccountScreen from '../screens/Orders/SelectAccountScreen';
 import ResumeCartScreen from '../screens/Orders/ResumeCartScreen';
 import { Ionicons } from 'react-native-vector-icons';
+import Colors from '@styles/Colors';
+import { Fonts } from '@styles/Theme';
 
 const Tab = createBottomTabNavigator();
 
@@ -22,6 +24,20 @@ const OrderTabNavigator = () => {
                         iconName = 'save';  // Ícono de carrito
                     }
                     return <Ionicons name={iconName} size={25} color={color} />;
+                },
+                tabBarActiveTintColor: Colors.PRIMARY,
+                tabBarInactiveTintColor: Colors.MUTED,
+                tabBarStyle: {
+                    backgroundColor: Colors.SURFACE,
+                    borderTopColor: Colors.BORDER,
+                    borderTopWidth: 1,
+                    height: 62,
+                    paddingBottom: 8,
+                    paddingTop: 6,
+                },
+                tabBarLabelStyle: {
+                    fontFamily: Fonts.body,
+                    fontSize: 12,
                 },
             })}
         >

@@ -1,5 +1,7 @@
 import CheckBox from "expo-checkbox";
 import { StyleSheet, Text, TextInput, View } from "react-native";
+import Colors from "@styles/Colors";
+import { Fonts } from "@styles/Theme";
 
 export default function ConfigItem(props) {
   return (
@@ -10,6 +12,7 @@ export default function ConfigItem(props) {
           <TextInput
             style={styles.textInput}
             placeholder={props.placeholder}
+            placeholderTextColor={Colors.MUTED}
             onChangeText={(text) => props.handleChange(props.field, text)}
             value={props.value}
             keyboardType={props.keyboardType ? props.keyboardType : "default"}
@@ -33,23 +36,34 @@ export default function ConfigItem(props) {
 
 const styles = StyleSheet.create({
   textTitle: {
-    fontSize: 16,
-    marginTop: 10,
+    fontSize: 13,
+    marginTop: 12,
+    color: Colors.BLACK,
+    fontFamily: Fonts.body,
+    letterSpacing: 0.3,
   },
   textInput: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderColor: "#000",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderColor: Colors.BORDER,
     borderWidth: 1,
-    marginVertical: 10,
+    marginVertical: 8,
+    borderRadius: 10,
+    backgroundColor: Colors.SURFACE,
+    color: Colors.BLACK,
+    fontFamily: Fonts.body,
   },
   checkboxContainer: {
     flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
   },
   checkbox: {
     alignSelf: "center",
   },
   label: {
-    margin: 8,
+    marginLeft: 8,
+    color: Colors.BLACK,
+    fontFamily: Fonts.body,
   },
 });

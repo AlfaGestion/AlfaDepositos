@@ -82,38 +82,38 @@ export default function ModalItem({ isVisible, setIsVisible, item, isNew = false
             visible={isVisible}
             style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
         >
-            <View style={{ elevation: 5, margin: 20, width: "90%", padding: 20, backgroundColor: "white", flex: 1, alignItems: "center", justifyContent: "flex-start" }}>
+            <View style={{ elevation: 5, margin: 20, width: "90%", padding: 20, backgroundColor: "white", borderRadius: 16, flex: 1, alignItems: "center", justifyContent: "flex-start" }}>
 
-                <Text style={{ fontSize: getFontSize(15), fontWeight: "500" }}>{code}</Text>
-                <Text style={{ fontSize: getFontSize(15), fontWeight: "500" }}>{name}</Text>
+                <Text style={{ fontSize: getFontSize(14), fontWeight: "600", color: Colors.MUTED }}>{code}</Text>
+                <Text style={{ fontSize: getFontSize(16), fontWeight: "600", color: Colors.DGREY, textAlign: "center" }}>{name}</Text>
 
                 <View style={{ marginTop: 20, width: "100%" }}>
 
-                    <Text style={{ fontSize: getFontSize(18), marginBottom: 5 }}>Ingrese la cantidad</Text>
+                    <Text style={{ fontSize: getFontSize(14), marginBottom: 6, color: Colors.DGREY }}>Ingrese la cantidad</Text>
 
                     <TextInput
 
                         autoFocus={isVisible}
                         // ref={inputRef}
-                        style={{ width: "100%", borderColor: "gray", fontSize: getFontSize(18), borderWidth: 1, paddingHorizontal: 5, paddingVertical: 5 }}
+                        style={{ width: "100%", borderColor: Colors.BORDER, fontSize: getFontSize(16), borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: "#F8FAFC" }}
                         onChangeText={(text) => setQuantity(text)}
                         keyboardType="number-pad"
                         value={quantity}
                     // defaultValue={quantity}
                     // editable={!isLoading}
                     />
-                    <Text style={{ fontSize: getFontSize(13) }}>Si no se informa se toma 1</Text>
+                    <Text style={{ fontSize: getFontSize(12), color: Colors.MUTED }}>Si no se informa se toma 1</Text>
                 </View>
 
                 {(config.pideBultos == "1" || config.pideBultos == 1) && (
                     <View style={{ marginTop: 20, width: "100%" }}>
-                        <Text style={{ fontSize: getFontSize(18), marginBottom: 5 }}>Ingrese los bultos</Text>
+                        <Text style={{ fontSize: getFontSize(14), marginBottom: 6, color: Colors.DGREY }}>Ingrese los bultos</Text>
 
                         <TextInput
                             // autoFocus={modalVisible}
                             // ref={inputRef}
                             value={bultos}
-                            style={{ width: "100%", borderColor: "gray", fontSize: getFontSize(18), borderWidth: 1, paddingHorizontal: 5, paddingVertical: 5 }}
+                            style={{ width: "100%", borderColor: Colors.BORDER, fontSize: getFontSize(16), borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: "#F8FAFC" }}
                             onChangeText={(text) => setBultos(text)}
                             keyboardType="number-pad"
                         // editable={!isLoading}
@@ -123,14 +123,14 @@ export default function ModalItem({ isVisible, setIsVisible, item, isNew = false
 
                 {(config.pidePrecio == "1" || config.pidePrecio == 1) && (
                     <View style={{ marginTop: 20, width: "100%" }}>
-                        <Text style={{ fontSize: getFontSize(18), marginBottom: 5 }}>Ingrese el precio</Text>
+                        <Text style={{ fontSize: getFontSize(14), marginBottom: 6, color: Colors.DGREY }}>Ingrese el precio</Text>
 
                         <TextInput
                             // autoFocus={modalVisible}
                             // ref={inputRef}
                             value={price}
                             // defaultValue={price}
-                            style={{ width: "100%", borderColor: "gray", fontSize: getFontSize(18), borderWidth: 1, paddingHorizontal: 5, paddingVertical: 5 }}
+                            style={{ width: "100%", borderColor: Colors.BORDER, fontSize: getFontSize(16), borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: "#F8FAFC" }}
                             onChangeText={(text) => setPrice(text)}
                             keyboardType="number-pad"
                         // editable={!isLoading}
@@ -140,10 +140,10 @@ export default function ModalItem({ isVisible, setIsVisible, item, isNew = false
 
                 {(config.descPorArticulo == "1" || config.descPorArticulo == 1) && (
                     <View style={{ marginTop: 20, width: "100%" }}>
-                        <Text style={{ fontSize: getFontSize(18), marginBottom: 5 }}>Descuento</Text>
+                        <Text style={{ fontSize: getFontSize(14), marginBottom: 6, color: Colors.DGREY }}>Descuento</Text>
                         <TextInput
                             value={discount}
-                            style={{ width: "100%", borderColor: "gray", fontSize: getFontSize(18), borderWidth: 1, paddingHorizontal: 5, paddingVertical: 5 }}
+                            style={{ width: "100%", borderColor: Colors.BORDER, fontSize: getFontSize(16), borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: "#F8FAFC" }}
                             onChangeText={(text) => setDiscount(text)}
                             keyboardType="number-pad"
                         // editable={!isLoading}
@@ -152,7 +152,7 @@ export default function ModalItem({ isVisible, setIsVisible, item, isNew = false
                 )}
 
                 <View style={{ marginTop: 20, width: "100%" }}>
-                    <TouchableOpacity style={{ width: "100%", backgroundColor: Colors.GREEN, paddingVertical: 10 }} onPress={() => {
+                    <TouchableOpacity style={{ width: "100%", backgroundColor: Colors.GREEN, paddingVertical: 12, borderRadius: 12 }} onPress={() => {
                         if (!isNew) {
                             removeFromCart(item.code)
                         }
@@ -160,11 +160,11 @@ export default function ModalItem({ isVisible, setIsVisible, item, isNew = false
                         if (onAdded) onAdded()
                         setIsVisible(false)
                     }}>
-                        <Text style={{ textAlign: "center", fontSize: getFontSize(15), fontWeight: "500" }}>AGREGAR A CARRITO</Text>
+                        <Text style={{ textAlign: "center", fontSize: getFontSize(15), fontWeight: "600", color: Colors.WHITE, letterSpacing: 0.4 }}>AGREGAR A CARRITO</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={{ width: "100%", marginTop: 20, backgroundColor: Colors.RED, paddingVertical: 10 }} onPress={() => setIsVisible(false)}>
-                        <Text style={{ textAlign: "center", fontSize: getFontSize(15), fontWeight: "500" }}>CANCELAR</Text>
+                    <TouchableOpacity style={{ width: "100%", marginTop: 12, backgroundColor: Colors.RED, paddingVertical: 12, borderRadius: 12 }} onPress={() => setIsVisible(false)}>
+                        <Text style={{ textAlign: "center", fontSize: getFontSize(15), fontWeight: "600", color: Colors.WHITE, letterSpacing: 0.4 }}>CANCELAR</Text>
                     </TouchableOpacity>
                 </View>
             </View>

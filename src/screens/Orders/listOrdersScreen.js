@@ -117,9 +117,9 @@ export default function ListOrdersScreen({ navigation }) {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#E7F1F9" }}>
       {/* SELECTOR DE PESTAÑAS */}
-      <View style={{ flexDirection: 'row', height: 50, borderBottomWidth: 1, borderColor: '#ccc', backgroundColor: '#fff' }}>
+      <View style={{ flexDirection: "row", height: 50, borderBottomWidth: 1, borderColor: "#ccc", backgroundColor: "#E7F1F9" }}>
         <TouchableOpacity
           onPress={() => handleActiveTab("compras")}
           style={{

@@ -364,13 +364,18 @@ export default function SendPendingsScreen({ navigation }) {
         {showError == "" ? (
           <View>
             <TouchableOpacity
-              activeOpacity={.7}
+              activeOpacity={0.8}
               disabled={showLoaders}
-              // disabled={showLoaders || !netInfo.isConnected}
               onPress={handleSendPending}
-              style={showLoaders ? [sendPending.btnSendPending, sendPending.btnSendPendingDisabled] : [sendPending.btnSendPending]}
+              style={[
+                sendPending.cardButton,
+                showLoaders ? sendPending.btnSendPendingDisabled : null,
+              ]}
             >
-              <Text style={[sendPending.textBtnSendPending]}>Enviar pendientes</Text>
+              <View style={sendPending.cardIconWrap}>
+                <Image style={sendPending.cardIcon} source={iconSendPending} />
+              </View>
+              <Text style={[sendPending.cardText]}>Enviar pendientes</Text>
             </TouchableOpacity>
 
             {showLoaders && (

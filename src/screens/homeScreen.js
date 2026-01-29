@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from "react";
 import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import SafeAreaView from "react-native-safe-area-view";
+import Ionicons from "@expo/vector-icons/Ionicons";
 
 import iconClose from "@icons/close.png";
 import iconConfiguration from "@icons/configuration.png";
@@ -17,6 +18,8 @@ import iconTasks from "@icons/tasks.png";
 import { UserContext } from "@context/UserContext";
 import { getUser } from "@storage/UserAsyncStorage";
 import Colors from "../styles/Colors";
+import BrandMark from "@components/BrandMark";
+import { Fonts, Radii, Shadow } from "@styles/Theme";
 
 import Configuration from "@db/Configuration";
 import Seller from "@db/Seller";
@@ -210,7 +213,9 @@ export default function Home({ navigation }) {
         style={styles.TouchableItem}
         onPress={() => (props.action ? logOut() : navigation.navigate(props.screen))}
       >
-        <Image source={props.icon} style={styles.image} />
+        <View style={styles.iconBadge}>
+          <Image source={props.icon} style={styles.imageNoTint} />
+        </View>
         <Text style={styles.title}>{props.title}</Text>
       </TouchableOpacity>
     </View>
@@ -222,7 +227,17 @@ export default function Home({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <FlatList data={menuData} renderItem={renderItem} keyExtractor={(item) => item.id} />
+      <FlatList
+        data={menuData}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <BrandMark label="Alfa Depósitos" size={72} />
+            <Text style={styles.subtitle}>Gestión ágil de depósitos y recepciones</Text>
+          </View>
+        }
+      />
       <View style={styles.footer}>
         <Text style={styles.compilationName}>Nro comp.: 1.3.0</Text>
         <Text style={styles.mainLabelName}>
@@ -249,13 +264,29 @@ export default function Home({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#E7F1F9",
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 6,
+  },
+  subtitle: {
+    marginTop: 2,
+    color: Colors.MUTED,
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    textAlign: "center",
   },
   item: {
-    backgroundColor: "#fff",
-    borderBottomColor: "#e1e1e1",
-    padding: 10,
-    marginVertical: 1,
-    marginHorizontal: 1,
+    backgroundColor: Colors.SURFACE,
+    padding: 14,
+    marginVertical: 6,
+    marginHorizontal: 16,
+    borderRadius: Radii.lg,
+    borderWidth: 1,
+    borderColor: Colors.BORDER,
+    ...Shadow.sm,
   },
   TouchableItem: {
     display: "flex",
@@ -264,31 +295,47 @@ const styles = StyleSheet.create({
     flexDirection: "row",
   },
   title: {
-    fontSize: 20,
-    marginLeft: 10,
+    fontSize: 18,
+    marginLeft: 14,
+    fontFamily: Fonts.display,
+    color: Colors.DGREY,
   },
-  image: {
-    width: 40,
-    height: 40,
-    marginLeft: 30,
+  imageNoTint: {
+    width: 28,
+    height: 28,
+  },
+  iconBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    marginLeft: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F0F5FA",
+    borderWidth: 1,
+    borderColor: Colors.BORDER,
   },
   mainLabelName: {
-    color: Colors.BLACK,
-    backgroundColor: Colors.WHITE,
-    padding: 10,
+    color: Colors.DGREY,
+    backgroundColor: Colors.SURFACE,
+    padding: 12,
     textAlign: "right",
+    fontFamily: Fonts.body,
   },
   compilationName: {
-    color: Colors.BLACK,
-    backgroundColor: Colors.WHITE,
-    padding: 10,
+    color: Colors.MUTED,
+    backgroundColor: Colors.SURFACE,
+    padding: 12,
     textAlign: "left",
     fontSize: 10,
+    fontFamily: Fonts.body,
   },
   footer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: Colors.WHITE,
+    backgroundColor: Colors.SURFACE,
+    borderTopWidth: 1,
+    borderTopColor: Colors.BORDER,
   },
 });

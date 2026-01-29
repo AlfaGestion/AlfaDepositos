@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import SafeAreaView from "react-native-safe-area-view";
 
 import { ConfigStyles } from "@styles/ConfigurationStyle";
@@ -8,6 +8,8 @@ import ConfigItem from "@components/ConfigItem";
 
 import Configuration from "@db/Configuration";
 import { restartTables } from "../services/db";
+import iconSave from "@icons/ok.png";
+import iconSync from "@icons/sync.png";
 
 export default function ConfigurationScreen({ navigation, route }) {
 
@@ -254,6 +256,7 @@ export default function ConfigurationScreen({ navigation, route }) {
 
             {!firstIn && (
               <TouchableOpacity style={[ConfigStyles.buttonRestartTables]} onPress={() => showAlert()}>
+                <Image source={iconSync} style={ConfigStyles.buttonIcon} />
                 <Text style={[ConfigStyles.buttonRestartTablesText]}>Reiniciar tablas</Text>
               </TouchableOpacity>
             )}
@@ -267,6 +270,7 @@ export default function ConfigurationScreen({ navigation, route }) {
               style={[ConfigStyles.buttonSave]}
               onPress={() => handleSave()}
             >
+              <Image source={iconSave} style={ConfigStyles.buttonIcon} />
               <Text style={[ConfigStyles.buttonSaveText]}>Grabar</Text>
             </TouchableOpacity>
             {saving ? (

@@ -92,42 +92,48 @@ export default function ResumeCartScreen({ jumpTo }) {
                 }}
             />
 
-            <View style={{ position: "absolute", width: "100%", minHeight: 100, backgroundColor: "#dddddd", bottom: 0, zIndex: 99, paddingVertical: 5, paddingBottom: 5 + (insets?.bottom || 0) }}>
-                <View style={{ width: "100%", paddingHorizontal: 10 }}>
+            <View style={{ position: "absolute", width: "100%", minHeight: 100, backgroundColor: "#F0F5FA", bottom: 0, zIndex: 99, paddingVertical: 8, paddingBottom: 8 + (insets?.bottom || 0) }}>
+                <View style={{ width: "100%", paddingHorizontal: 12 }}>
 
                     {(status?.message && status?.error) && <Text style={{ color: "white", backgroundColor: status?.error ? Colors.RED : Colors.GREEN, width: "100%", textAlign: "center", padding: 5 }}>{status.message}</Text>}
 
-                    <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#bebebe", borderBottomWidth: 1, paddingVertical: 3 }}>
-                        <Text style={{ fontSize: getFontSize(15) }}>SUBTOTAL</Text>
-                        <Text style={{ fontSize: getFontSize(15) }}>${formatAmount(getSubtotal())}</Text>
+                    <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#D0D7E2", borderBottomWidth: 1, paddingVertical: 4 }}>
+                        <Text style={{ fontSize: getFontSize(14), color: Colors.MUTED }}>SUBTOTAL</Text>
+                        <Text style={{ fontSize: getFontSize(14), color: Colors.DGREY }}>${formatAmount(getSubtotal())}</Text>
                     </View>
 
-                    <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#bebebe", borderBottomWidth: 1, paddingVertical: 3 }}>
-                        <Text style={{ fontSize: getFontSize(15) }}>DESCUENTO</Text>
-                        <Text style={{ fontSize: getFontSize(15) }}>${formatAmount(getTotalDiscount())}</Text>
+                    <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#D0D7E2", borderBottomWidth: 1, paddingVertical: 4 }}>
+                        <Text style={{ fontSize: getFontSize(14), color: Colors.MUTED }}>DESCUENTO</Text>
+                        <Text style={{ fontSize: getFontSize(14), color: Colors.DGREY }}>${formatAmount(getTotalDiscount())}</Text>
                     </View>
 
                     {getDetalleIva()?.map((item, idx) => (
-                        <View key={`iva_${idx}`} style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#bebebe", borderBottomWidth: 1, paddingVertical: 3 }}>
-                            <Text style={{ fontSize: getFontSize(15) }}>IVA {item.iva}%</Text>
-                            <Text style={{ fontSize: getFontSize(15) }}>${formatAmount(item.importe)}</Text>
+                        <View key={`iva_${idx}`} style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", borderBottomColor: "#D0D7E2", borderBottomWidth: 1, paddingVertical: 4 }}>
+                            <Text style={{ fontSize: getFontSize(14), color: Colors.MUTED }}>IVA {item.iva}%</Text>
+                            <Text style={{ fontSize: getFontSize(14), color: Colors.DGREY }}>${formatAmount(item.importe)}</Text>
                         </View>
                     ))}
 
-                    <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row" }}>
-                        <Text style={{ fontSize: getFontSize(20), fontWeight: "bold" }}>TOTAL</Text>
-                        <Text style={{ fontSize: getFontSize(20), fontWeight: "bold" }}>${formatAmount(getTotal())}</Text>
+                    <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", paddingTop: 4 }}>
+                        <Text style={{ fontSize: getFontSize(18), fontWeight: "bold", color: Colors.DGREY }}>TOTAL</Text>
+                        <Text style={{ fontSize: getFontSize(18), fontWeight: "bold", color: Colors.DGREY }}>${formatAmount(getTotal())}</Text>
                     </View>
                 </View>
 
-                <TouchableOpacity disabled={isSaving} onPress={() => handleSaveOrder()} style={{ width: "100%", marginTop: 10 }}>
+                <TouchableOpacity
+                    disabled={isSaving}
+                    onPress={() => handleSaveOrder()}
+                    style={{ width: "100%", marginTop: 10, paddingHorizontal: 10 }}
+                >
                     {isSaving ?
-                        <View style={{ flexDirection: "row", width: "100%", backgroundColor: Colors.GREEN, padding: 10, alignItems: "center", justifyContent: "center" }}>
+                        <View style={{ flexDirection: "row", width: "100%", backgroundColor: Colors.GREEN, paddingVertical: 12, alignItems: "center", justifyContent: "center", borderRadius: 14 }}>
                             <ActivityIndicator size="small" />
                             <Text style={{ textAlign: "center", fontSize: getFontSize(18), fontWeight: "600", color: "white", marginLeft: 5 }}>GENERANDO</Text>
                         </View>
                         :
-                        <Text style={{ textAlign: "center", fontSize: getFontSize(18), fontWeight: "600", backgroundColor: Colors.GREEN, color: "white", padding: 10 }}>RECEPCIONAR</Text>
+                        <View style={{ width: "100%", backgroundColor: Colors.GREEN, paddingVertical: 12, alignItems: "center", justifyContent: "center", borderRadius: 14 }}>
+                            <Text style={{ textAlign: "center", fontSize: getFontSize(18), fontWeight: "600", color: "white" }}>RECEPCIONAR</Text>
+                        </View>
                     }
                 </TouchableOpacity>
 

@@ -131,7 +131,7 @@ export default function Products({ navigation }) {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} key={refreshKey}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#E7F1F9" }} key={refreshKey}>
       {/* --- MODAL DEL ESCÁNER --- */}
       <RNModal visible={scannerVisible} animationType="slide">
         <View style={styles.scannerContainer}>

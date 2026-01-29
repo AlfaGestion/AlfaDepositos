@@ -83,8 +83,27 @@ export default function SelectAccountScreen({ jumpTo, route }) {
                 </TouchableOpacity>
             }
 
-            <TouchableOpacity onPress={() => removeAccount()} style={{ width: "100%", padding: 10, backgroundColor: Colors.GREEN, marginVertical: 10 }}>
-                <Text style={{ textAlign: "center", fontSize: getFontSize(17), color: "white", fontWeight: "600" }}>CAMBIAR PROVEEDOR</Text>
+            <TouchableOpacity
+                onPress={() => removeAccount()}
+                style={{
+                    width: "100%",
+                    paddingVertical: 12,
+                    paddingHorizontal: 16,
+                    backgroundColor: Colors.SURFACE,
+                    marginVertical: 10,
+                    borderRadius: 14,
+                    borderWidth: 1,
+                    borderColor: Colors.BORDER,
+                    shadowColor: Colors.GREY,
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.2,
+                    shadowRadius: 4,
+                    elevation: 2,
+                }}
+            >
+                <Text style={{ textAlign: "center", fontSize: getFontSize(16), color: Colors.DGREY, fontWeight: "600", letterSpacing: 0.5 }}>
+                    CAMBIAR PROVEEDOR
+                </Text>
             </TouchableOpacity>
 
             <View style={{ backgroundColor: "white", width: "100%", padding: 10 }}>

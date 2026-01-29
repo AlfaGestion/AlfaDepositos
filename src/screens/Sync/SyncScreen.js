@@ -19,8 +19,9 @@ import Location from "@db/Location";
 import Task from "@db/Task";
 import { getDataFromAPI } from "@libraries/api";
 
+import BrandMark from "@components/BrandMark";
 import iconSync from "@icons/sync.png";
-
+      <BrandMark label="Alfa Depósitos" size={72} />
 import { syncStyle } from "@styles/SyncStyle";
 
 import { UserContext } from "@context/UserContext";
@@ -339,14 +340,16 @@ export default function SyncScreen({ navigation, route }) {
         El proceso de sincronización, descargará la información de vendedores, articulos, proveedores y rubros. Este proceso puede demorar varios
         minutos, dependiendo de la cantidad de registros y su conexión a internet.
       </Text>
-      <Image style={[syncStyle.image]} source={iconSync} />
+
 
       {/* {!netInfo.isConnected && <Text style={{ marginBottom: 10, color: "red" }}>No dispone de conexión a internet</Text>} */}
 
       {showButtonSync ? (
-        <TouchableOpacity activeOpacity={.7} style={[syncStyle.btnSync]} onPress={syncData}>
-          {/* <TouchableOpacity activeOpacity={.7} disabled={!netInfo.isConnected} style={[syncStyle.btnSync]} onPress={syncData}> */}
-          <Text style={[syncStyle.textBtnSync]}>Sincronizar</Text>
+        <TouchableOpacity activeOpacity={0.8} style={syncStyle.cardButton} onPress={syncData}>
+          <View style={syncStyle.cardIconWrap}>
+            <Image style={syncStyle.cardIcon} source={iconSync} />
+          </View>
+          <Text style={syncStyle.cardText}>Sincronizar</Text>
         </TouchableOpacity>
       ) : errorSync ? (
         <Text style={[syncStyle.errorMessage]}>{errorSync}</Text>
