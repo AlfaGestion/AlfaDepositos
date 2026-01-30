@@ -1,6 +1,6 @@
 ﻿import { useCart } from '@hooks/useCart';
 import { useEffect, useRef, useState } from 'react';
-import { Button, FlatList, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Button, FlatList, InteractionManager, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Colors from '@styles/Colors';
 import { getFontSize } from '../../utils/Metrics';
@@ -9,7 +9,7 @@ import FooterTotal from '../../components/Cart/FooterTotal';
 import ItemCart from '../../components/Cart/ItemCart';
 import { useRoute } from '@react-navigation/native';
 
-export default function CartScreen({ jumpTo }) {
+export default function CartScreen({ jumpTo, isActive = false }) {
 
     const { account, cartItems } = useCart();
     const route = useRoute();
@@ -18,16 +18,56 @@ export default function CartScreen({ jumpTo }) {
     const [codeInput, setCodeInput] = useState('');
     const [qtyInput, setQtyInput] = useState('1');
     const [scanTrigger, setScanTrigger] = useState(0);
+    const [searchTrigger, setSearchTrigger] = useState(0);
     const [lastAddedAt, setLastAddedAt] = useState(0);
     const [lastAddedItem, setLastAddedItem] = useState(null);
     const qtyInputRef = useRef(null);
+    const codeInputRef = useRef(null);
+
+    const focusQtyInput = () => {
+        qtyInputRef.current?.focus?.();
+    };
+
+    const focusCodeInput = () => {
+        codeInputRef.current?.focus?.();
+    };
+
+    const focusPrimaryInput = () => {
+        if (isInventory) {
+            focusCodeInput();
+        } else {
+            focusQtyInput();
+        }
+    };
 
     useEffect(() => {
+        if (!isActive) return;
+        let cancelled = false;
+        const task = InteractionManager.runAfterInteractions(() => {
+            if (cancelled) return;
+            setTimeout(() => {
+                if (cancelled) return;
+                focusPrimaryInput();
+                // Second attempt in case another input steals focus
+                setTimeout(() => {
+                    if (cancelled) return;
+                    focusPrimaryInput();
+                }, 150);
+            }, 80);
+        });
+        return () => {
+            cancelled = true;
+            task?.cancel?.();
+        };
+    }, [isActive]);
+
+    useEffect(() => {
+        if (!isActive || !account) return;
         const t = setTimeout(() => {
-            qtyInputRef.current?.focus?.();
-        }, 100);
+            focusPrimaryInput();
+        }, 120);
         return () => clearTimeout(t);
-    }, []);
+    }, [isActive, account, isInventory]);
 
     useEffect(() => {
         if (isInventory) {
@@ -49,6 +89,15 @@ export default function CartScreen({ jumpTo }) {
         </View>
     }
 
+    const handleSearchCode = () => {
+        const code = String(codeInput ?? "").trim();
+        if (!code) {
+            Alert.alert("Atención", "Ingrese un código para buscar.");
+            return;
+        }
+        setSearchTrigger((v) => v + 1);
+    };
+
     return (
         <View style={{ flex: 1 }}>
             <View style={{ paddingHorizontal: 10, paddingTop: 10 }}>
@@ -60,6 +109,8 @@ export default function CartScreen({ jumpTo }) {
                     value={qtyInput}
                     onChangeText={setQtyInput}
                     keyboardType="number-pad"
+                    returnKeyType="next"
+                    onSubmitEditing={() => codeInputRef.current?.focus?.()}
                     style={{
                         borderWidth: 1,
                         borderColor: Colors.GREY,
@@ -76,9 +127,11 @@ export default function CartScreen({ jumpTo }) {
                 </Text>
                 <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
                     <TextInput
+                        ref={codeInputRef}
                         value={codeInput}
                         onChangeText={setCodeInput}
                         placeholder="Ingrese el código"
+                        onSubmitEditing={handleSearchCode}
                         style={{
                             flex: 1,
                             borderWidth: 1,
@@ -89,6 +142,20 @@ export default function CartScreen({ jumpTo }) {
                             paddingVertical: 10,
                         }}
                     />
+                    <TouchableOpacity
+                        onPress={handleSearchCode}
+                        style={{
+                            width: 48,
+                            backgroundColor: Colors.DBLUE,
+                            borderRadius: 10,
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            paddingVertical: 6,
+                            paddingHorizontal: 8,
+                        }}
+                    >
+                        <Ionicons name="checkmark" size={20} color={Colors.WHITE} />
+                    </TouchableOpacity>
                     <TouchableOpacity
                         onPress={() => {
                             setScanTrigger((v) => v + 1);
@@ -111,6 +178,25 @@ export default function CartScreen({ jumpTo }) {
                         </Text>
                     </TouchableOpacity>
                 </View>
+
+                {lastAddedItem && (
+                    <View style={{
+                        backgroundColor: Colors.SURFACE,
+                        borderWidth: 1,
+                        borderColor: Colors.BORDER,
+                        borderRadius: 10,
+                        paddingVertical: 8,
+                        paddingHorizontal: 10,
+                        marginBottom: 10,
+                    }}>
+                        <Text style={{ fontSize: getFontSize(12), color: Colors.MUTED }}>
+                            Agregado: {lastAddedItem?.name || lastAddedItem?.description || lastAddedItem?.descripcion || ""}
+                        </Text>
+                        <Text style={{ fontSize: getFontSize(12), color: Colors.DGREY }}>
+                            Cantidad: {lastAddedItem?.quantity || 0}
+                        </Text>
+                    </View>
+                )}
 
                 <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
                     <TouchableOpacity
@@ -143,11 +229,17 @@ export default function CartScreen({ jumpTo }) {
                 </View>
             </View>
 
-            <ListaProductos
-                priceClassSelected={account?.priceClass ?? 1}
-                lista={account?.lista}
-                scanTrigger={scanTrigger}
-                hideList={!showList}
+                <ListaProductos
+                    priceClassSelected={account?.priceClass ?? 1}
+                    lista={account?.lista}
+                    scanTrigger={scanTrigger}
+                    searchTrigger={searchTrigger}
+                    searchCode={codeInput}
+                    searchQuantity={qtyInput}
+                    autoAddOnManualSearch={true}
+                    searchAutoFocus={false}
+                    isActive={isActive}
+                    hideList={!showList}
                 fillHeight={false}
                 autoAddOnScan={true}
                 scanQuantity={qtyInput}
@@ -157,6 +249,8 @@ export default function CartScreen({ jumpTo }) {
                         setLastAddedItem({ ...product, quantity: qty });
                     }
                     setQtyInput('1');
+                    setCodeInput('');
+                    focusCodeInput();
                 }}
                 showSearchCamera={false}
                 showFooter={false}
@@ -169,7 +263,7 @@ export default function CartScreen({ jumpTo }) {
                 </Text>
                 {(cartItems?.length > 0 || lastAddedItem) ? (
                     <FlatList
-                        data={cartItems?.length > 0 ? cartItems : [lastAddedItem]}
+                        data={cartItems?.length > 0 ? [...cartItems].sort((a, b) => (b._addedAt || 0) - (a._addedAt || 0)) : [lastAddedItem]}
                         keyExtractor={(item, idx) => `${item.code}_${idx}`}
                         renderItem={({ item }) => <ItemCart item={item} priceClass={account?.priceClass ?? 1} showImage={false} compact={true} />}
                         ListFooterComponent={<View />}

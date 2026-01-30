@@ -1,7 +1,7 @@
 import Account from "@db/Account";
 import { useEffect, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { SceneMap, TabBar, TabView } from 'react-native-tab-view';
+import { TabBar, TabView } from 'react-native-tab-view';
 import Colors from "@styles/Colors";
 import { Fonts } from "@styles/Theme";
 import { useCart } from '../hooks/useCart';
@@ -11,14 +11,8 @@ import { Alert, BackHandler } from 'react-native';
 import ResumeCartScreen from '../screens/Orders/ResumeCartScreen';
 import SelectAccountScreen from '../screens/Orders/SelectAccountScreen';
 
-const renderScene = SceneMap({
-    proveedor: SelectAccountScreen,
-    articulos: CartScreen,
-    resumeCart: ResumeCartScreen
-});
-
 const routes = [
-    { key: 'proveedor', title: 'PROVEEDOR' },
+    { key: 'proveedor', title: 'INICIO' },
     { key: 'articulos', title: 'ARTICULOS' },
     { key: 'resumeCart', title: 'RESUMEN' },
 ];
@@ -96,7 +90,18 @@ export default function OrderViewTab({ navigation, route }) {
 
         <TabView
             navigationState={{ index, routes }}
-            renderScene={renderScene}
+            renderScene={({ route: tabRoute, jumpTo }) => {
+                switch (tabRoute.key) {
+                    case 'proveedor':
+                        return <SelectAccountScreen jumpTo={jumpTo} />;
+                    case 'articulos':
+                        return <CartScreen isActive={index === 1} jumpTo={jumpTo} />;
+                    case 'resumeCart':
+                        return <ResumeCartScreen />;
+                    default:
+                        return null;
+                }
+            }}
             onIndexChange={setIndex}
             initialLayout={{ width: layout.width }}
             renderTabBar={(props) => (

@@ -7,6 +7,7 @@ import { useIsFocused } from "@react-navigation/native";
 import Order from "@db/Order";
 import Colors from "@styles/Colors";
 import { useCart } from '@hooks/useCart';
+import SQLite from "@db/SQLiteCompat";
 
 export default function ListOrdersScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState("compras");
@@ -17,6 +18,23 @@ export default function ListOrdersScreen({ navigation }) {
 
   const { setOrderMode } = useCart();
 
+  const hasAccountsTable = useCallback(async () => {
+    const db = SQLite.openDatabase("alfadeposito.db");
+    return new Promise((resolve) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='accounts'",
+          [],
+          (_tx, result) => resolve(result.rows.length > 0),
+          (_tx, error) => {
+            console.error("Error validando tabla accounts:", error);
+            resolve(false);
+          }
+        );
+      });
+    });
+  }, [hasAccountsTable, navigation]);
+
   // Función de carga unificada con filtro por TC
   const loadOrdersPending = useCallback(async (tab) => {
     setLoading(true);
@@ -26,6 +44,11 @@ export default function ListOrdersScreen({ navigation }) {
     const tcFilter = tab === "compras" ? "RP" : "IR";
     
     try {
+      const accountsReady = await hasAccountsTable();
+      if (!accountsReady) {
+        navigation.navigate("SyncScreen");
+        return;
+      }
       await Order.createTable();
       // Importante: Asegúrate que tu método Order.findAll() soporte 
       // el filtrado por TC o filtra el resultado aquí:

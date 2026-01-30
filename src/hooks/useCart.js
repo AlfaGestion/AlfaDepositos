@@ -472,6 +472,7 @@ export const CartProvider = ({ children }) => {
         // console.log("s", product)
         setCartItems((prevItems) => {
             const existingProduct = prevItems.find(item => item.id === product.id);
+            const addedAt = Date.now();
 
             let actualPrice = 0;
 
@@ -502,14 +503,15 @@ export const CartProvider = ({ children }) => {
                             bultos: bultos > 0 ? bultos : parseInt(item.bultos),
                             disc: disc == 0 ? product.disc : 0,
                             priceWithDiscount: priceWithDiscount,
-                            quantity: sumProductToExisting ? (quantity > 1 ? quantity : parseInt(item.quantity) + 1) : (parseInt(item?.quantity) + parseInt(quantity))
+                            quantity: sumProductToExisting ? (quantity > 1 ? quantity : parseInt(item.quantity) + 1) : (parseInt(item?.quantity) + parseInt(quantity)),
+                            _addedAt: addedAt
                         }  // Aumentamos la cantidad
                         : item
                 );
             } else {
                 // console.log(product)
                 // Si no estÃ¡ en el carrito, lo agregamos con una cantidad de 1
-                return [...prevItems, { ...product, bultos: bultos, priceWithDiscount: priceWithDiscount, quantity: parseInt(quantity), disc: disc, alicIva: (parseInt(product?.iva) == 0 || product?.iva == null) ? 21 : product?.iva }];
+                return [...prevItems, { ...product, bultos: bultos, priceWithDiscount: priceWithDiscount, quantity: parseInt(quantity), disc: disc, alicIva: (parseInt(product?.iva) == 0 || product?.iva == null) ? 21 : product?.iva, _addedAt: addedAt }];
             }
         });
     };
@@ -550,7 +552,8 @@ export const CartProvider = ({ children }) => {
                         bultos: bultos > 0 ? bultos : parseInt(item.bultos),
                         disc: disc == 0 ? item.disc : 0,
                         priceWithDiscount: itemPriceWithDiscount,
-                        quantity: parseInt(item.quantity) + qty
+                        quantity: parseInt(item.quantity) + qty,
+                        _addedAt: Date.now()
                     };
                 } else {
                     next.push({
@@ -559,7 +562,8 @@ export const CartProvider = ({ children }) => {
                         priceWithDiscount,
                         quantity: qty,
                         disc,
-                        alicIva: (parseInt(product?.iva) == 0 || product?.iva == null) ? 21 : product?.iva
+                        alicIva: (parseInt(product?.iva) == 0 || product?.iva == null) ? 21 : product?.iva,
+                        _addedAt: Date.now()
                     });
                     indexById.set(product.id, next.length - 1);
                 }

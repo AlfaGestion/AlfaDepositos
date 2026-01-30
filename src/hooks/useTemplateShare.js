@@ -104,12 +104,22 @@ export default function useTemplateShare() {
 
   const getTemplateOrder = async (data) => {
     console.log(data);
-    const { order, products, sellerName, accountName } = data;
+    const { order, products, accountName } = data;
+    const isInventory = order?.tc === "IR";
+    const isReception = order?.tc === "RP";
+    const title = isInventory ? "Toma de inventario" : isReception ? "Recepción de compras" : `Pedido nro ${order.id}`;
 
     let detailProducts = () => {
       let html = "";
       products.forEach((product) => {
-        // console.log(product[`price${order.price_class}`])
+        if (isInventory || isReception) {
+          html += `
+          <tr>
+            <td style="text-align: left; padding: 10px">${product.name}</td>
+            <td style="text-align: right; padding: 10px">${product.quantity}</td>
+          </tr>`;
+          return;
+        }
         const total =
           product.disc > 0
             ? (product[`price${order.price_class}`] - (product.disc * product[`price${order.price_class}`]) / 100) * product.quantity
@@ -134,13 +144,18 @@ export default function useTemplateShare() {
     <html>
       <body>
         <div style="width: 95%; padding: 10px; border: 1px solid #e1e1e1">
-          <h2>Pedido nro ${order.id}</h2>
+          <h2>${title}</h2>
         </div>
     
         <div style="margin-top: 10px; width: 95%; padding: 10px; border: 1px solid #e1e1e1">
           <p><b>Fecha:</b> ${order?.date}</p>
-          <p><b>Cuenta:</b> ${order?.account} - ${accountName}</p>
-          <p><b>Vendedor:</b> ${order?.id_seller} - ${sellerName}</p>
+          ${isInventory
+        ? `<p><b>Observaciones:</b> ${order?.obs || ""}</p>`
+        : isReception
+          ? `<p><b>Cuenta:</b> ${order?.account} - ${accountName}</p>
+             <p><b>Observaciones:</b> ${order?.obs || ""}</p>`
+          : `<p><b>Cuenta:</b> ${order?.account} - ${accountName}</p>`
+      }
         </div>
     
         <div style="margin-top: 5px; width: 95%;">
@@ -151,18 +166,24 @@ export default function useTemplateShare() {
               <tr>
                 <th style="text-align: left; padding: 10px">Producto</th>
                 <th style="text-align: right; padding: 10px">Cantidad</th>
-                <th style="text-align: right; padding: 10px">Importe</th>
-                <th style="text-align: right; padding: 10px">% Dto.</th>
-                <th style="text-align: right; padding: 10px">Total</th>
+                ${(isInventory || isReception)
+        ? ""
+        : `<th style="text-align: right; padding: 10px">Importe</th>
+                   <th style="text-align: right; padding: 10px">% Dto.</th>
+                   <th style="text-align: right; padding: 10px">Total</th>`
+      }
               </tr>
             </thead>
     
             <tbody>
               ${detailProducts()}
-              <tr>
+              ${(isInventory || isReception)
+        ? ""
+        : `<tr>
                 <td style="padding: 10px" colspan="4"><b>TOTAL</b></td>
                 <td style="padding: 10px; text-align: right"><b>${currencyFormat(order.total)}</b></td>
-              </tr>
+              </tr>`
+      }
             </tbody>
           </table>
         </div>
