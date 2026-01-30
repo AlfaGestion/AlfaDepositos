@@ -75,6 +75,12 @@ export default function CartScreen({ jumpTo, isActive = false }) {
         }
     }, [isInventory]);
 
+    useEffect(() => {
+        if (isInventory && (!cartItems || cartItems.length === 0)) {
+            setLastAddedItem(null);
+        }
+    }, [isInventory, cartItems]);
+
     if (!account) {
         return <View style={{ flex: 1, paddingHorizontal: 10, marginTop: 20, display: "flex" }}>
             <Text
@@ -89,10 +95,13 @@ export default function CartScreen({ jumpTo, isActive = false }) {
         </View>
     }
 
-    const handleSearchCode = () => {
-        const code = String(codeInput ?? "").trim();
+    const handleSearchCode = (rawValue = null, showAlert = false) => {
+        const source = rawValue !== null && rawValue !== undefined ? rawValue : codeInput;
+        const code = String(source ?? "").trim();
         if (!code) {
-            Alert.alert("Atención", "Ingrese un código para buscar.");
+            if (showAlert) {
+                Alert.alert("Atención", "Ingrese un código para buscar.");
+            }
             return;
         }
         setSearchTrigger((v) => v + 1);
@@ -131,7 +140,7 @@ export default function CartScreen({ jumpTo, isActive = false }) {
                         value={codeInput}
                         onChangeText={setCodeInput}
                         placeholder="Ingrese el código"
-                        onSubmitEditing={handleSearchCode}
+                        onSubmitEditing={(e) => handleSearchCode(e?.nativeEvent?.text, false)}
                         style={{
                             flex: 1,
                             borderWidth: 1,
@@ -143,7 +152,7 @@ export default function CartScreen({ jumpTo, isActive = false }) {
                         }}
                     />
                     <TouchableOpacity
-                        onPress={handleSearchCode}
+                        onPress={() => handleSearchCode(null, true)}
                         style={{
                             width: 48,
                             backgroundColor: Colors.DBLUE,
@@ -189,10 +198,10 @@ export default function CartScreen({ jumpTo, isActive = false }) {
                         paddingHorizontal: 10,
                         marginBottom: 10,
                     }}>
-                        <Text style={{ fontSize: getFontSize(12), color: Colors.MUTED }}>
-                            Agregado: {lastAddedItem?.name || lastAddedItem?.description || lastAddedItem?.descripcion || ""}
+                        <Text style={{ fontSize: getFontSize(24), fontWeight: "700", color: Colors.DGREY }}>
+                            {lastAddedItem?.name || lastAddedItem?.description || lastAddedItem?.descripcion || ""}
                         </Text>
-                        <Text style={{ fontSize: getFontSize(12), color: Colors.DGREY }}>
+                        <Text style={{ fontSize: getFontSize(16), fontWeight: "600", color: Colors.DGREY, marginTop: 4 }}>
                             Cantidad: {lastAddedItem?.quantity || 0}
                         </Text>
                     </View>
@@ -274,7 +283,7 @@ export default function CartScreen({ jumpTo, isActive = false }) {
                     <Text style={{ marginLeft: 10, color: Colors.GREY }}>Todavía no hay artículos.</Text>
                 )}
             </View>
-            <FooterTotal />
+            {!isInventory && <FooterTotal />}
         </View>
     )
 
