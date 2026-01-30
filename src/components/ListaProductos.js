@@ -36,6 +36,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
     const [scannedQty, setScannedQty] = useState("1");
     const loadingRef = useRef(false);
     const lastSearchTriggerRef = useRef(0);
+    const lastScanTriggerRef = useRef(0);
 
     const refInput = useRef();
     const scanningRef = useRef(false);
@@ -419,9 +420,11 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
 
     useEffect(() => {
         if (!isActive) return;
-        if (scanTrigger > 0) {
-            openScanner();
+        if (scanTrigger <= 0 || scanTrigger === lastScanTriggerRef.current) {
+            return;
         }
+        lastScanTriggerRef.current = scanTrigger;
+        openScanner();
     }, [scanTrigger, isActive]);
 
     useEffect(() => {

@@ -25,7 +25,6 @@ export default function FooterTotal() {
 
     return (
         <View style={{ zIndex: 99, flexDirection: "row", paddingVertical: 10, paddingHorizontal: 12, alignItems: "center", justifyContent: "center", position: "absolute", bottom: 0, paddingBottom: 10 + (insets?.bottom || 0), backgroundColor: "#F0F5FA", borderTopColor: Colors.BORDER, borderTopWidth: 1, width: "100%" }}>
-            <Text style={{ fontSize: getFontSize(18), fontWeight: "700", color: Colors.DGREY, marginRight: 6 }}>TOTAL:</Text>
             <Text style={{ fontSize: getFontSize(22), fontWeight: "700", color: Colors.DGREY }}>$ {formatAmount(total)}</Text>
             {/* <TouchableOpacity onPress={() => clearCart()} style={{ backgroundColor: "#f58383", borderRadius: 20, paddingHorizontal: 15, paddingVertical: 5 }}>
                 <Text style={{ fontSize: getFontSize(20) }}>Vaciar</Text>
