@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, BackHandler, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import SafeAreaView from "react-native-safe-area-view";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
@@ -207,11 +207,30 @@ export default function Home({ navigation }) {
     navigation.navigate("HomeScreen");
   };
 
+  const exitApp = async () => {
+    const response = await getUser();
+    loginAction({ type: "sign-out", data: response });
+    BackHandler.exitApp();
+  };
+
   const Item = (props) => (
     <View style={styles.item}>
       <TouchableOpacity
         style={styles.TouchableItem}
-        onPress={() => (props.action ? logOut() : navigation.navigate(props.screen))}
+        onPress={() => {
+          if (props.action) {
+            Alert.alert(
+              "Salir",
+              "¿Desea salir de la aplicación?",
+              [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Salir", onPress: () => exitApp() },
+              ]
+            );
+            return;
+          }
+          navigation.navigate(props.screen);
+        }}
       >
         <View style={styles.iconBadge}>
           <Image source={props.icon} style={styles.imageNoTint} />
@@ -239,7 +258,7 @@ export default function Home({ navigation }) {
         }
       />
       <View style={styles.footer}>
-        <Text style={styles.compilationName}>Nro comp.: 1.3.0</Text>
+        <Text style={styles.compilationName}>Nro comp.: 1.0.0</Text>
         <Text style={styles.mainLabelName}>
           VENDEDOR: {login?.user?.user ?? ""} - {login?.user?.name ?? ""}
         </Text>
