@@ -172,7 +172,7 @@ export default function ResumeCartScreen({ jumpTo }) {
                         </View>
                         :
                         <View style={{ width: "100%", backgroundColor: Colors.GREEN, paddingVertical: 12, alignItems: "center", justifyContent: "center", borderRadius: 14 }}>
-                            <Text style={{ textAlign: "center", fontSize: getFontSize(18), fontWeight: "600", color: "white" }}>RECEPCIONAR</Text>
+                            <Text style={{ textAlign: "center", fontSize: getFontSize(18), fontWeight: "600", color: "white" }}>ACEPTAR</Text>
                         </View>
                     }
                 </TouchableOpacity>

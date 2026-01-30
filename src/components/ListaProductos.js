@@ -13,11 +13,12 @@ import FooterTotal from "./Cart/FooterTotal";
 import ItemCart from "./Cart/ItemCart";
 import ModalItem from "./Cart/ModalItem";
 
-export default function ListaProductos({ priceClassSelected = 1, lista = '', scanTrigger = 0, hideList = false, autoAddOnScan = false, scanQuantity = 1, onAutoAdd, showSearchCamera = true, fillHeight = true, showFooter = true, listCompact = false }) {
+export default function ListaProductos({ priceClassSelected = 1, lista = '', scanTrigger = 0, searchTrigger = 0, searchCode = "", searchQuantity = 1, autoAddOnManualSearch = false, hideList = false, autoAddOnScan = false, scanQuantity = 1, onAutoAdd, showSearchCamera = true, searchAutoFocus = true, fillHeight = true, showFooter = true, listCompact = false, isActive = true }) {
     const { passValidations, addManyToCart, noPermiteDuplicarItem, cartItems } = useCart();
     const effectivePriceClass = priceClassSelected || 1;
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [pendingSelected, setPendingSelected] = useState(null);
+    const [manualSelectedQty, setManualSelectedQty] = useState(null);
     
     // Estados para el Escáner
     const [permission, requestPermission] = useCameraPermissions();
@@ -34,10 +35,24 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
     const [scannedCode, setScannedCode] = useState("");
     const [scannedQty, setScannedQty] = useState("1");
     const loadingRef = useRef(false);
+    const lastSearchTriggerRef = useRef(0);
 
     const refInput = useRef();
     const scanningRef = useRef(false);
     const normalize = (c) => String(c ?? "").replace(/[^0-9a-z]/gi, "");
+    const promoteProduct = (product) => {
+        if (!product) return;
+        setProductsSearch((prev) => {
+            if (!Array.isArray(prev) || prev.length === 0) return prev;
+            const filtered = prev.filter((p) => p?.id !== product?.id);
+            return [product, ...filtered];
+        });
+        setDefaultProducts((prev) => {
+            if (!Array.isArray(prev) || prev.length === 0) return prev;
+            const filtered = prev.filter((p) => p?.id !== product?.id);
+            return [product, ...filtered];
+        });
+    };
     const withTimeout = async (promise, label = "consulta", ms = 6000) => {
         let timer;
         try {
@@ -90,7 +105,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
         return product;
     };
 
-    const searchByCode = async (code, useFallback = true) => {
+    const searchByCode = async (code, useFallback = true, manualQty = null) => {
         if (loadingRef.current) return;
         loadingRef.current = true;
         setIsLoading(true);
@@ -102,7 +117,23 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
             const localMatch = localList.find((p) => {
                 return normalize(p?.code) === normalize(rawCode) || normalize(p?.codigoBarras) === normalize(rawCode);
             });
+            const effectiveQty = manualQty || manualSelectedQty;
             if (localMatch) {
+                if (autoAddOnManualSearch && effectiveQty) {
+                    const validate = await passValidations(localMatch);
+                    if (!validate) {
+                        Alert.alert('Alerta', 'Este artículo ya fue cargado en este o en otro comprobante.');
+                        resetSearch(false);
+                        return;
+                    }
+                    addManyToCart([{ product: localMatch, qty: effectiveQty }]);
+                    if (typeof onAutoAdd === "function") {
+                        onAutoAdd(localMatch, effectiveQty);
+                    }
+                    promoteProduct(localMatch);
+                    resetSearch(false);
+                    return;
+                }
                 setItem(localMatch);
                 setProductSearchText("");
                 setProductsSearch(defaultProducts || []);
@@ -111,15 +142,25 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
             }
             const product = await findProductByCode(code, useFallback);
             if (product && product.length > 0) {
-                const validate = await passValidations(product[0]);
+                const selected = product[0];
+                const validate = await passValidations(selected);
 
                 if (!validate) {
                     Alert.alert('Alerta', 'Este artículo ya fue cargado en este o en otro comprobante.');
-                    resetSearch();
+                    resetSearch(false);
                     return;
                 }
 
-                setItem(product[0]);
+                if (autoAddOnManualSearch && effectiveQty) {
+                    addManyToCart([{ product: selected, qty: effectiveQty }]);
+                    if (typeof onAutoAdd === "function") {
+                        onAutoAdd(selected, effectiveQty);
+                    }
+                    promoteProduct(selected);
+                    resetSearch(false);
+                    return;
+                }
+                setItem(selected);
                 setProductSearchText("");
                 setProductsSearch(defaultProducts || []);
                 setIsModalVisible(true);
@@ -183,10 +224,10 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
         }
     };
 
-    const resetSearch = () => {
+    const resetSearch = (focusSearch = true) => {
         setProductSearchText("");
         setProductsSearch(defaultProducts || []);
-        if (refInput.current) refInput.current.focus();
+        if (focusSearch && refInput.current) refInput.current.focus();
     };
 
     const handleBarCodeScanned = async ({ type, data }) => {
@@ -211,6 +252,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                     if (typeof onAutoAdd === "function") {
                         onAutoAdd(product[0], qty);
                     }
+                    promoteProduct(product[0]);
                     return;
                 }
                 Alert.alert('Error', 'El código escaneado no existe.');
@@ -242,7 +284,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
             if (existing) {
                 return prev.map((p) => p.code === code ? { ...p, qty: p.qty + normalizedQty } : p);
             }
-            return [...prev, { code, qty: normalizedQty }];
+            return [{ code, qty: normalizedQty }, ...prev];
         });
         setScanModalVisible(false);
     };
@@ -376,10 +418,37 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
     };
 
     useEffect(() => {
+        if (!isActive) return;
         if (scanTrigger > 0) {
             openScanner();
         }
-    }, [scanTrigger]);
+    }, [scanTrigger, isActive]);
+
+    useEffect(() => {
+        if (!isActive) {
+            setScannerVisible(false);
+        }
+    }, [isActive]);
+
+    useEffect(() => {
+        if (searchTrigger <= 0 || searchTrigger === lastSearchTriggerRef.current) {
+            return;
+        }
+        lastSearchTriggerRef.current = searchTrigger;
+        const code = String(searchCode ?? "").trim();
+        if (code) {
+            const qty = parseInt(searchQuantity, 10);
+            const normalizedQty = Number.isFinite(qty) && qty > 0 ? qty : 1;
+            setManualSelectedQty(normalizedQty);
+            searchByCode(code, true, normalizedQty);
+        }
+    }, [searchTrigger, searchCode, searchQuantity]);
+
+    useEffect(() => {
+        if (!isModalVisible) {
+            setManualSelectedQty(null);
+        }
+    }, [isModalVisible]);
 
     const loadProducts = async (text = "") => {
         if (loadingRef.current) return;
@@ -450,14 +519,17 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                 setIsVisible={setIsModalVisible}
                 item={item}
                 initialQuantity={
-                    pendingSelected && (
-                        normalize(pendingSelected.code) === normalize(item?.code) ||
-                        normalize(pendingSelected.code) === normalize(item?.codigoBarras)
-                    )
-                        ? pendingSelected.qty
-                        : null
+                    manualSelectedQty
+                        ? manualSelectedQty
+                        : pendingSelected && (
+                            normalize(pendingSelected.code) === normalize(item?.code) ||
+                            normalize(pendingSelected.code) === normalize(item?.codigoBarras)
+                        )
+                            ? pendingSelected.qty
+                            : null
                 }
                 onAdded={() => {
+                    setManualSelectedQty(null);
                     if (pendingSelected && item) {
                         const match =
                             normalize(pendingSelected.code) === normalize(item.code) ||
@@ -521,7 +593,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                     <View style={styles.searchContainer}>
                         <TextInput
                             ref={refInput}
-                            autoFocus={true}
+                            autoFocus={searchAutoFocus}
                             style={{ marginVertical: 10, width: "75%", padding: 10 }}
                             placeholder="Descripción o código"
                             onChangeText={(text) => loadProducts(text)}
