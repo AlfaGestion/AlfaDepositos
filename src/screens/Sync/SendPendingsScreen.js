@@ -10,11 +10,6 @@ import SyncItem from "@components/SyncItem";
 
 import Order from "@db/Order";
 import OrderDetail from "@db/OrderDetail";
-import Payment from "@db/Payment";
-import PaymentInvoices from "@db/PaymentInvoices";
-import PaymentMethods from "@db/PaymentMethods";
-import Task from "@db/Task";
-import VisitDetails from "@db/VisitDetails";
 import Account from '@db/Account';
 import { formatDate } from "@libraries/utils";
 
@@ -37,9 +32,6 @@ export default function SendPendingsScreen({ navigation }) {
 
   const [showLoaders, setShowLoaders] = useState(false);
   const [showLoaderOrders, setShowLoaderOrders] = useState(true);
-  const [showLoaderPayments, setShowLoaderPayments] = useState(true);
-  const [showLoaderTasks, setShowLoaderTasks] = useState(true);
-  const [showLoaderVisits, setShowLoaderVisits] = useState(true);
   const [showLoaderAccounts, setShowLoaderAccounts] = useState(true);
 
   const [showError, setShowError] = useState("");
@@ -202,172 +194,6 @@ export default function SendPendingsScreen({ navigation }) {
 
     setShowLoaderOrders(false);
     return false;
-  };
-  const _sendPayments = async () => {
-    let payments = await Payment.query();
-    let paymentsSend = [];
-
-    for (const item of payments) {
-      const invoices = await PaymentInvoices.query({ where: { paymentId_eq: item.paymentId } });
-      const methods = await PaymentMethods.query({ where: { paymentId_eq: item.paymentId } });
-
-      paymentsSend.push({
-        date: item.date,
-        account: item.account,
-        // mp: item.mp,
-        amount: item.amount,
-        // observation: item.obs ? item.obs.trim() : "",
-        seller: item.seller,
-        tc: item.tc,
-        paymentId: item.paymentId,
-        invoices: invoices,
-        methods: methods,
-        // check: {
-        //   nro: item.numberCheck,
-        //   expiration: "",
-        //   idBank: "",
-        // },
-      });
-    }
-
-    if (paymentsSend.length > 0) {
-      try {
-        const response = await setDataToApi("payment/save", JSON.stringify(paymentsSend));
-
-        if (!response.error) {
-          setShowLoaderPayments(false);
-          try {
-            await Payment.destroyAll();
-            return false;
-          } catch (e) {
-            setShowError("Error al eliminar las cobranzas enviadas. No envie nuevamente por que se duplicarÃ­an. : " + e);
-            return true;
-          }
-        } else {
-          setShowError("OcurriÃ³ un error al enviar las cobranzas : " + response.message);
-          return true;
-        }
-      } catch (error) {
-        setShowError("OcurriÃ³ un error al enviar las cobranzas : " + error);
-        return true;
-      }
-    } else {
-      setShowLoaderPayments(false);
-      return false;
-    }
-  };
-
-  const sendTasks = async () => {
-    setShowLoaderTasks(false);
-    return false;
-  };
-
-  const sendVisitsData = async () => {
-    setShowLoaderVisits(false);
-    return false;
-  };
-
-  const sendPayments = async () => {
-    setShowLoaderPayments(false);
-    return false;
-  };
-
-  const _sendTasks = async () => {
-    let tasks = await Task.query();
-    let tasksSend = [];
-
-    for (const item of tasks) {
-      tasksSend.push({
-        date: setFormatDate(item.date, true),
-        account: item.account,
-        obs: item.obs ? item.obs.trim() : "",
-        sign: item.sign,
-        task: item.service,
-        seller: item.seller,
-        accountName: item?.accountName || '',
-        document: item?.document || '',
-        phone: item?.phone || '',
-        image1a: item?.image1a || null,
-        image1b: item?.image1b || null,
-        image2a: item?.image2a || null,
-        image2b: item?.image2b || null,
-        image3a: item?.image3a || null,
-        image3b: item?.image3b || null,
-        image4a: item?.image4a || null,
-        image4b: item?.image4b || null,
-        image5a: item?.image5a || null,
-        image5b: item?.image5b || null,
-      });
-    }
-
-    if (tasksSend.length > 0) {
-      try {
-        const response = await setDataToApi("task/", JSON.stringify(tasksSend));
-
-        if (!response.error) {
-          setShowLoaderTasks(false);
-          try {
-            await Task.destroyAll();
-            return false;
-          } catch (e) {
-            setShowError("Error al eliminar las tareas enviadas. No envie nuevamente por que se duplicarÃ­an. : " + e);
-            return true;
-          }
-        } else {
-          setShowError("OcurriÃ³ un error al enviar las tareas :" + response.message);
-          return true;
-        }
-      } catch (error) {
-        setShowError("OcurriÃ³ un error al enviar las tareas :" + error);
-        return true;
-      }
-    } else {
-      setShowLoaderTasks(false);
-      return false;
-    }
-  };
-
-  const _sendVisitsData = async () => {
-    let visitDetail = await VisitDetails.query();
-    let visitsSend = [];
-
-    for (const item of visitDetail) {
-      visitsSend.push({
-        date: item.date,
-        account: item.account,
-        obs: item.obs ? item.obs.trim() : "",
-        seller: item.seller,
-        visited: item.visited ? item.visited : 0,
-      });
-    }
-
-    if (visitsSend.length > 0) {
-      try {
-        const response = await setDataToApi("seller/visits", JSON.stringify(visitsSend));
-
-        if (!response.error) {
-          setShowLoaderVisits(false);
-          try {
-            const datenow = formatDate(new Date(), true, false)
-            await VisitDetails.deleteVisits(datenow)
-
-            return false;
-          } catch (e) {
-            setShowError("Error al eliminar los datos de visitas. No envie nuevamente por que se duplicarÃ­an. : " + e);
-            return true;
-          }
-        } else {
-          setShowError("OcurriÃ³ un error al enviar los datos de visitas :" + response.message);
-          return true;
-        }
-      } catch (error) {
-        setShowError("OcurriÃ³ un error al enviar los datos de visitas :" + error);
-        return true;
-      }
-    } else {
-      setShowLoaderVisits(false);
-      return false;
-    }
   };
 
   const handleSendPending = async () => {

@@ -4,7 +4,6 @@ import Order from "@db/Order";
 import OrderDetail from "@db/OrderDetail";
 import Configuration from "@db/Configuration";
 import { UserContext } from "@context/UserContext";
-import VisitDetails from "@db/VisitDetails";
 import { formatDate } from "@libraries/utils";
 import { bulkInsert } from "@db/Functions";
 import usePrintAndShare from "@hooks/usePrintAndShare";
@@ -279,30 +278,7 @@ export const CartProvider = ({ children }) => {
                     idOrder = await withTimeout(insertOrderFast(props), "Order.insertFast");
                     console.log("[SAVE] Order.insertFast done", idOrder);
 
-                    //Inserto la visita
-                    try {
-                        await withTimeout(VisitDetails.createTable(), "VisitDetails.createTable");
-                        console.log("[SAVE] VisitDetails.findBy start");
-                        const existsVisit = await withTimeout(VisitDetails.findBy({ account_eq: account.code }), "VisitDetails.findBy");
-                        console.log("[SAVE] VisitDetails.findBy done");
-
-                        if (!existsVisit) {
-                            const dataVisit = {
-                                visited: 1,
-                                obs: "",
-                                account: account.code,
-                                seller: login.user.user,
-                                date: formatDate(new Date(), true, false),
-                            };
-
-                            const visit = new VisitDetails(dataVisit);
-                            console.log("[SAVE] VisitDetails.save start");
-                            await withTimeout(visit.save(), "VisitDetails.save");
-                            console.log("[SAVE] VisitDetails.save done");
-                        }
-                    } catch (e) {
-                        console.log("[SAVE] VisitDetails skipped", e?.message || e);
-                    }
+                    // Visitas desactivadas: no se registran visitas al guardar comprobantes
                 } catch (err) {
                     setIsSaving(false)
                     console.log(err);
@@ -311,6 +287,7 @@ export const CartProvider = ({ children }) => {
                 }
             }
 
+            console.log("[SAVE] saveProducts call", { orderId: idOrder });
             await withTimeout(saveProducts(idOrder, isShare, printInvoice), "saveProducts");
             clearTimeout(watchdog);
         } catch (e) {

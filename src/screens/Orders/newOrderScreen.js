@@ -26,7 +26,6 @@ import ProductListSearch from "../../components/ProductListSearch";
 import Account from "@db/Account";
 import OrderDetail from "@db/OrderDetail";
 import Product from "@db/Product";
-import VisitDetails from "@db/VisitDetails";
 // import { getLocation } from "../../services/location";
 import { getAvailableStockProducts } from "../../services/product";
 
@@ -361,21 +360,7 @@ export default function NewOrderScreen({ route }) {
           const dataId = await Order.getLastId();
           id = dataId[0].id;
 
-          //Inserto la visita
-          const existsVisit = await VisitDetails.findBy({ account_eq: currentAccount.code });
-
-          if (!existsVisit) {
-            const dataVisit = {
-              visited: 1,
-              obs: "",
-              account: currentAccount.code,
-              seller: login.user.user,
-              date: formatDate(new Date(), true, false),
-            };
-
-            const visit = new VisitDetails(dataVisit);
-            visit.save();
-          }
+          // Visitas desactivadas
         } catch (err) {
           console.log(err);
         }

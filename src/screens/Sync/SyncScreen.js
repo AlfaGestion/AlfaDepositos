@@ -11,17 +11,11 @@ import Family from "@db/Family";
 import { bulkInsert } from "@db/Functions";
 import Order from "@db/Order";
 import OrderDetail from "@db/OrderDetail";
-import Payment from "@db/Payment";
-import PaymentInvoices from "@db/PaymentInvoices";
-import PaymentMethods from "@db/PaymentMethods";
 import Product from "@db/Product";
-import Location from "@db/Location";
-import Task from "@db/Task";
 import { getDataFromAPI } from "@libraries/api";
 
 import BrandMark from "@components/BrandMark";
 import iconSync from "@icons/sync.png";
-      <BrandMark label="Alfa Depósitos" size={72} />
 import { syncStyle } from "@styles/SyncStyle";
 
 import { UserContext } from "@context/UserContext";
@@ -67,20 +61,14 @@ export default function SyncScreen({ navigation, route }) {
 
   const createTables = async () => {
     // await Payment.dropTable();
-    await Location.createTable();
     await Category.createTable();
     await Account.createTable();
     await Family.createTable();
     await Order.createTable();
     await OrderDetail.createTable();
-    await Payment.createTable();
-    await PaymentMethods.createTable();
-    await PaymentInvoices.createTable();
 
     await Product.createTable();
     await ProductLista.createTable();
-    // await Task.dropTable();
-    await Task.createTable();
   };
 
   async function syncData() {
@@ -337,7 +325,7 @@ export default function SyncScreen({ navigation, route }) {
   return (
     <View style={[syncStyle.container]}>
       <Text style={[syncStyle.text]}>
-        El proceso de sincronización, descargará la información de vendedores, articulos, proveedores y rubros. Este proceso puede demorar varios
+        El proceso de sincronización descargará rubros, familias, proveedores y artículos. Este proceso puede demorar varios
         minutos, dependiendo de la cantidad de registros y su conexión a internet.
       </Text>
 
