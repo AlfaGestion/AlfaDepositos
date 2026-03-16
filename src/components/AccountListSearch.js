@@ -8,7 +8,7 @@ import AccountSearch from "@components/AccountSearch";
 import { UserContext } from "@context/UserContext";
 import Account from "@db/Account";
 
-export default function AccountListSearch({ handleSelAccount, mode }) {
+export default function AccountListSearch({ handleSelAccount, mode, darkMode = false }) {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [login, loginAction] = useContext(UserContext);
@@ -43,16 +43,17 @@ export default function AccountListSearch({ handleSelAccount, mode }) {
   };
 
   return (
-    <SafeAreaView>
-      <Text style={[newOrderStyles.title]}>Seleccione un proveedor</Text>
+    <SafeAreaView style={{ backgroundColor: darkMode ? "#0F1720" : "transparent" }}>
+      <Text style={[newOrderStyles.title, darkMode && { color: "#E8F0F8" }]}>Seleccione un proveedor</Text>
       <TextInput
         autoFocus={true}
-        style={[newOrderStyles.inputSearchAccount]}
+        style={[newOrderStyles.inputSearchAccount, darkMode && { backgroundColor: "#152332", borderColor: "#2D4154", color: "#E8F0F8" }]}
         onChangeText={(text) => loadAccounts(text)}
         placeholder="Buscar un proveedor"
+        placeholderTextColor={darkMode ? "#9CB2C8" : "#7A7A7A"}
       ></TextInput>
 
-      <View style={[newOrderStyles.viewSearch]}>
+      <View style={[newOrderStyles.viewSearch, darkMode && { backgroundColor: "#0F1720" }]}>
         <FlatList
           ListFooterComponent={<View />}
           ListFooterComponentStyle={{ height: 200 }}
@@ -68,6 +69,7 @@ export default function AccountListSearch({ handleSelAccount, mode }) {
                 priceClass={item.price_class}
                 lista={item.lista}
                 functionCall={handleSelAccount}
+                darkMode={darkMode}
               ></AccountSearch>
             );
           }}

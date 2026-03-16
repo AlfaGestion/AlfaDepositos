@@ -1,14 +1,17 @@
 import Configuration from "@db/Configuration";
+import { useThemeConfig } from "@context/ThemeContext";
 import * as FileSystem from 'expo-file-system';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
 
 // const fallbackImage = require('./assets/default.png');
-import imgProduct from "@icons/product2.png";
+import imgProduct from "@icons/articulos.png";
+import imgProductDark from "@icons/articulos_b.png";
 
 export default function ProductImage({ fileName, reload = false, widthImage = 200, heightImage = 200, cancelaCarga = false }) {
     const [imageUri, setImageUri] = useState(null);
     const [error, setError] = useState(false);
+    const { darkMode } = useThemeConfig();
 
     const loadConfig = async () => {
         if (cancelaCarga) {
@@ -128,7 +131,7 @@ export default function ProductImage({ fileName, reload = false, widthImage = 20
                 />
             ) : error ? (
                 <Image
-                    source={imgProduct}
+                    source={darkMode ? imgProductDark : imgProduct}
                     style={{ width: widthImage, height: heightImage, borderRadius: 10 }}
                 />
             ) : (

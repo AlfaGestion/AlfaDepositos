@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import ModalItem from './ModalItem';
 import ProductImage from '../ProductImage';
 
-export default function ItemCart({ item, priceClass, showImage = true, compact = false }) {
+export default function ItemCart({ item, priceClass, showImage = true, compact = false, darkMode = false }) {
     const [isModalVisible, setIsModalVisible] = useState(false);
     const { addToCart, noPermiteDuplicarItem, decreaseQuantity, loadImages, getCurrentQuantity, removeFromCart, setGlobalPriceClass } = useCart();
 
@@ -30,8 +30,8 @@ export default function ItemCart({ item, priceClass, showImage = true, compact =
     const btnPadding = compact ? 8 : 15;
 
     return (
-        <TouchableOpacity onPress={() => setIsModalVisible(true)} style={{ marginBottom: 8, backgroundColor: "white", flexDirection: "row", paddingHorizontal: rowPadding }}>
-            <ModalItem isVisible={isModalVisible} setIsVisible={setIsModalVisible} item={item} />
+        <TouchableOpacity onPress={() => setIsModalVisible(true)} style={{ marginBottom: 8, backgroundColor: darkMode ? "#152332" : "white", flexDirection: "row", paddingHorizontal: rowPadding }}>
+            <ModalItem isVisible={isModalVisible} setIsVisible={setIsModalVisible} item={item} darkMode={darkMode} />
 
             {showImage && (
                 <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -41,9 +41,9 @@ export default function ItemCart({ item, priceClass, showImage = true, compact =
             )}
 
             <View style={{ flex: showImage ? 3 : 4, paddingVertical: 4, paddingRight: rightPadding }}>
-                <Text style={{ fontSize: getFontSize(codeSize) }}>#{item?.code}</Text>
-                <Text style={{ fontSize: getFontSize(nameSize) }}>{item?.name}</Text>
-                <Text style={{ fontSize: getFontSize(priceSize), fontWeight: "600" }}>$ {priceToShow}</Text>
+                <Text style={{ fontSize: getFontSize(codeSize), color: darkMode ? "#BFD0E0" : "#1B1B1B" }}>#{item?.code}</Text>
+                <Text style={{ fontSize: getFontSize(nameSize), color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>{item?.name}</Text>
+                <Text style={{ fontSize: getFontSize(priceSize), fontWeight: "600", color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>$ {priceToShow}</Text>
 
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: quantity > 0 ? "space-between" : "flex-end" }}>
                     {quantity > 0 && (
@@ -54,14 +54,14 @@ export default function ItemCart({ item, priceClass, showImage = true, compact =
 
                     {!noPermiteDuplicarItem ?
                         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", marginRight: 10, paddingVertical: 5 }}>
-                            <TouchableOpacity onPress={() => decreaseQuantity(item.code)} style={{ borderWidth: 1, borderColor: "gray", borderRadius: 20 }}>
-                                <Text style={{ paddingHorizontal: btnPadding, fontWeight: "bold", paddingVertical: 5, fontSize: getFontSize(qtyFont) }}>-</Text>
+                            <TouchableOpacity onPress={() => decreaseQuantity(item.code)} style={{ borderWidth: 1, borderColor: darkMode ? "#2D4154" : "gray", borderRadius: 20 }}>
+                                <Text style={{ paddingHorizontal: btnPadding, fontWeight: "bold", paddingVertical: 5, fontSize: getFontSize(qtyFont), color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>-</Text>
                             </TouchableOpacity>
 
-                            <Text style={{ fontSize: getFontSize(qtyFont), textAlign: "center", fontWeight: "bold", paddingHorizontal: 10, minWidth: compact ? 48 : 70 }}>{quantity}</Text>
+                            <Text style={{ fontSize: getFontSize(qtyFont), textAlign: "center", fontWeight: "bold", paddingHorizontal: 10, minWidth: compact ? 48 : 70, color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>{quantity}</Text>
 
-                            <TouchableOpacity onPress={() => addToCart(item, 1, 0, priceClass)} style={{ borderWidth: 1, borderColor: "gray", borderRadius: 20 }}>
-                                <Text style={{ paddingHorizontal: btnPadding, paddingVertical: 5, fontWeight: "bold", fontSize: getFontSize(qtyFont) }}>+</Text>
+                            <TouchableOpacity onPress={() => addToCart(item, 1, 0, priceClass)} style={{ borderWidth: 1, borderColor: darkMode ? "#2D4154" : "gray", borderRadius: 20 }}>
+                                <Text style={{ paddingHorizontal: btnPadding, paddingVertical: 5, fontWeight: "bold", fontSize: getFontSize(qtyFont), color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>+</Text>
                             </TouchableOpacity>
                         </View>
                         :

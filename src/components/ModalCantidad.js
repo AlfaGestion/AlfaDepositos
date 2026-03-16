@@ -5,6 +5,7 @@ import { ActivityIndicator, Alert, Modal, Text, TextInput, TouchableOpacity, Vie
 import { cModalQtyStyles } from "@styles/OrderStyle";
 import { getProductStock } from "../services/product";
 import Colors from "../styles/Colors";
+import { useThemeConfig } from "@context/ThemeContext";
 
 import Configuration from "@db/Configuration";
 
@@ -23,6 +24,7 @@ export default function ModalCantidad(props) {
   const [currentStock, setCurrentStock] = useState({ real: 0, comprometido: 0, total: null, disponible: null })
   const [isLoading, setIsLoading] = useState(false)
   const { modalVisible, setQtyProduct, setPriceProduct, priceProduct, setBultosProduct, setDiscProduct, handleAddProduct, setModalVisible, productSelected } = props;
+  const { darkMode } = useThemeConfig();
   // const inputRef = React.useRef(null);
 
   async function loadStockOnline() {
@@ -158,7 +160,7 @@ export default function ModalCantidad(props) {
       // onShow={() => inputRef.current.focus()}
       >
         <View style={{ ...cModalQtyStyles.centeredView, ...cModalQtyStyles.container }}>
-          <View style={[cModalQtyStyles.modalView]}>
+          <View style={[cModalQtyStyles.modalView, darkMode && { backgroundColor: "#152332", borderColor: "#2D4154", borderWidth: 1 }]}>
             <View style={[cModalQtyStyles.inputQtyContainer]}>
               {config.showStock == 1 &&
                 // {config.showStock == 1 && netInfo.isConnected &&
@@ -184,32 +186,32 @@ export default function ModalCantidad(props) {
 
               {productSelected && (
                 <View style={cModalQtyStyles.containerTextProduct}>
-                  <Text style={cModalQtyStyles.textProduct}># {productSelected.code}</Text>
-                  <Text style={cModalQtyStyles.textProduct}>{productSelected.name}</Text>
+                  <Text style={[cModalQtyStyles.textProduct, darkMode && { color: "#BFD0E0" }]}># {productSelected.code}</Text>
+                  <Text style={[cModalQtyStyles.textProduct, darkMode && { color: "#E8F0F8" }]}>{productSelected.name}</Text>
                 </View>
               )}
 
-              <Text style={[cModalQtyStyles.modalText]}>Ingrese la cantidad</Text>
+              <Text style={[cModalQtyStyles.modalText, darkMode && { color: "#E8F0F8" }]}>Ingrese la cantidad</Text>
 
               <TextInput
                 autoFocus={modalVisible}
                 // ref={inputRef}
-                style={[cModalQtyStyles.inputQty]}
+                style={[cModalQtyStyles.inputQty, darkMode && { backgroundColor: "#0F1720", borderColor: "#2D4154", color: "#E8F0F8" }]}
                 onChangeText={(text) => validateStock(text)}
                 keyboardType="number-pad"
                 editable={!isLoading}
               />
-              <Text style={[cModalQtyStyles.textSmall]}>Si no se informa se toma 1</Text>
+              <Text style={[cModalQtyStyles.textSmall, darkMode && { color: "#9CB2C8" }]}>Si no se informa se toma 1</Text>
             </View>
 
             {config.pideBultos == "1" && (
               <View style={[cModalQtyStyles.inputQtyContainer]}>
-                <Text style={[cModalQtyStyles.modalText]}>Ingrese los bultos</Text>
+                <Text style={[cModalQtyStyles.modalText, darkMode && { color: "#E8F0F8" }]}>Ingrese los bultos</Text>
 
                 <TextInput
                   // autoFocus={modalVisible}
                   // ref={inputRef}
-                  style={[cModalQtyStyles.inputQty]}
+                  style={[cModalQtyStyles.inputQty, darkMode && { backgroundColor: "#0F1720", borderColor: "#2D4154", color: "#E8F0F8" }]}
                   onChangeText={(text) => setBultosProduct(text)}
                   keyboardType="number-pad"
                   editable={!isLoading}
@@ -219,14 +221,14 @@ export default function ModalCantidad(props) {
 
             {config.pidePrecio == "1" && (
               <View style={[cModalQtyStyles.inputQtyContainer]}>
-                <Text style={[cModalQtyStyles.modalText]}>Ingrese el precio</Text>
+                <Text style={[cModalQtyStyles.modalText, darkMode && { color: "#E8F0F8" }]}>Ingrese el precio</Text>
 
                 <TextInput
                   // autoFocus={modalVisible}
                   // ref={inputRef}
                   value={priceProduct}
                   // defaultValue={productSelected.price + ""}
-                  style={[cModalQtyStyles.inputQty]}
+                  style={[cModalQtyStyles.inputQty, darkMode && { backgroundColor: "#0F1720", borderColor: "#2D4154", color: "#E8F0F8" }]}
                   onChangeText={(text) => setPriceProduct(text)}
                   keyboardType="number-pad"
                   editable={!isLoading}
@@ -236,9 +238,9 @@ export default function ModalCantidad(props) {
 
             {config.descPorArticulo == 1 ? (
               <View style={[cModalQtyStyles.inputQtyContainer]}>
-                <Text style={[cModalQtyStyles.modalText]}>Descuento</Text>
+                <Text style={[cModalQtyStyles.modalText, darkMode && { color: "#E8F0F8" }]}>Descuento</Text>
                 <TextInput
-                  style={[cModalQtyStyles.inputQty]}
+                  style={[cModalQtyStyles.inputQty, darkMode && { backgroundColor: "#0F1720", borderColor: "#2D4154", color: "#E8F0F8" }]}
                   onChangeText={(text) => setDiscProduct(text)}
                   keyboardType="number-pad"
                   editable={!isLoading}

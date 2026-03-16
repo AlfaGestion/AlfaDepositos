@@ -5,7 +5,7 @@ import DropDownPicker from "react-native-dropdown-picker";
 import { getFontSize } from "../utils/Metrics";
 import Colors from "@styles/Colors";
 
-export default function DropdownTypeDocument({ value, setValue }) {
+export default function DropdownTypeDocument({ value, setValue, darkMode = false }) {
     const [items, setItems] = useState([]);
     const [open, setOpen] = useState(false);
 
@@ -39,7 +39,7 @@ export default function DropdownTypeDocument({ value, setValue }) {
 
     return (
         <>
-            <Text style={{ fontSize: getFontSize(17), marginBottom: 10, display: "flex", fontWeight: "400", backgroundColor: Colors.PRIMARY, color: "white", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>COMPROBANTE</Text>
+            <Text style={{ fontSize: getFontSize(17), marginBottom: 10, display: "flex", fontWeight: "400", backgroundColor: darkMode ? "#243241" : Colors.PRIMARY, color: "white", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>COMPROBANTE</Text>
 
             <DropDownPicker
                 open={open}
@@ -52,9 +52,13 @@ export default function DropdownTypeDocument({ value, setValue }) {
                     setValue(newValue)
                 }}
                 setItems={setItems}
-                textStyle={{ fontSize: getFontSize(18) }}
+                textStyle={{ fontSize: getFontSize(18), color: darkMode ? "#E8F0F8" : "#1B1B1B" }}
                 placeholder="Comprobante"
-                style={styles.selecPriceClass}
+                style={[styles.selecPriceClass, darkMode && { backgroundColor: "#152332", borderColor: "#2D4154" }]}
+                placeholderStyle={{ color: darkMode ? "#9CB2C8" : "#6D6D6D" }}
+                dropDownContainerStyle={{ backgroundColor: darkMode ? "#152332" : "#FFFFFF", borderColor: darkMode ? "#2D4154" : Colors.GREY }}
+                listItemLabelStyle={{ color: darkMode ? "#E8F0F8" : "#1B1B1B" }}
+                selectedItemLabelStyle={{ color: darkMode ? "#FFFFFF" : Colors.DBLUE, fontWeight: "600" }}
             />
         </>
     );

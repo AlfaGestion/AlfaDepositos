@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import imgAccount from "@icons/account.png";
+import imgAccount from "@icons/clientes.png";
 
 export default function AccountItem(props) {
   return (

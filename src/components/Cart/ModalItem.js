@@ -4,8 +4,9 @@ import { getFontSize } from '../../utils/Metrics'
 import { useCart } from '../../hooks/useCart';
 import Configuration from "@db/Configuration";
 import Colors from '../../styles/Colors';
+import { useThemeConfig } from "@context/ThemeContext";
 
-export default function ModalItem({ isVisible, setIsVisible, item, isNew = false, initialQuantity = null, onAdded = null }) {
+export default function ModalItem({ isVisible, setIsVisible, item, isNew = false, initialQuantity = null, onAdded = null, darkMode: forcedDarkMode = null }) {
     const [quantity, setQuantity] = useState(0)
     const [discount, setDiscount] = useState(0)
     const [bultos, setBultos] = useState(0)
@@ -21,6 +22,8 @@ export default function ModalItem({ isVisible, setIsVisible, item, isNew = false
     })
 
     const { addToCart, account, getItem, removeFromCart } = useCart();
+    const { darkMode: contextDarkMode } = useThemeConfig();
+    const darkMode = typeof forcedDarkMode === "boolean" ? forcedDarkMode : contextDarkMode;
 
     const { code, name } = item || { code: '', name: '' }
 
@@ -100,37 +103,37 @@ export default function ModalItem({ isVisible, setIsVisible, item, isNew = false
             visible={isVisible}
             style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
         >
-            <View style={{ elevation: 5, marginTop: 80, marginHorizontal: 20, width: "90%", padding: 20, backgroundColor: "white", borderRadius: 16, alignItems: "center", justifyContent: "center" }}>
+            <View style={{ elevation: 5, marginTop: 80, marginHorizontal: 20, width: "90%", padding: 20, backgroundColor: darkMode ? "#152332" : "white", borderRadius: 16, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: darkMode ? "#2D4154" : Colors.BORDER }}>
 
-                <Text style={{ fontSize: getFontSize(14), fontWeight: "600", color: Colors.MUTED }}>{code}</Text>
-                <Text style={{ fontSize: getFontSize(16), fontWeight: "600", color: Colors.DGREY, textAlign: "center" }}>{name}</Text>
+                <Text style={{ fontSize: getFontSize(14), fontWeight: "600", color: darkMode ? "#9CB2C8" : Colors.MUTED }}>{code}</Text>
+                <Text style={{ fontSize: getFontSize(16), fontWeight: "600", color: darkMode ? "#E8F0F8" : Colors.DGREY, textAlign: "center" }}>{name}</Text>
 
                 <View style={{ marginTop: 20, width: "100%" }}>
 
-                    <Text style={{ fontSize: getFontSize(14), marginBottom: 6, color: Colors.DGREY }}>Ingrese la cantidad</Text>
+                    <Text style={{ fontSize: getFontSize(14), marginBottom: 6, color: darkMode ? "#E8F0F8" : Colors.DGREY }}>Ingrese la cantidad</Text>
 
                     <TextInput
                         ref={inputRef}
                         autoFocus={isVisible}
-                        style={{ width: "100%", borderColor: Colors.BORDER, fontSize: getFontSize(16), borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: "#F8FAFC" }}
+                        style={{ width: "100%", borderColor: darkMode ? "#2D4154" : Colors.BORDER, fontSize: getFontSize(16), borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: darkMode ? "#0F1720" : "#F8FAFC", color: darkMode ? "#E8F0F8" : "#1B1B1B" }}
                         onChangeText={(text) => setQuantity(text)}
                         keyboardType="number-pad"
                         value={quantity}
                     // defaultValue={quantity}
                     // editable={!isLoading}
                     />
-                    <Text style={{ fontSize: getFontSize(12), color: Colors.MUTED }}>Si no se informa se toma 1</Text>
+                    <Text style={{ fontSize: getFontSize(12), color: darkMode ? "#9CB2C8" : Colors.MUTED }}>Si no se informa se toma 1</Text>
                 </View>
 
                 {(config.pideBultos == "1" || config.pideBultos == 1) && (
                     <View style={{ marginTop: 20, width: "100%" }}>
-                        <Text style={{ fontSize: getFontSize(14), marginBottom: 6, color: Colors.DGREY }}>Ingrese los bultos</Text>
+                        <Text style={{ fontSize: getFontSize(14), marginBottom: 6, color: darkMode ? "#E8F0F8" : Colors.DGREY }}>Ingrese los bultos</Text>
 
                         <TextInput
                             // autoFocus={modalVisible}
                             // ref={inputRef}
                             value={bultos}
-                            style={{ width: "100%", borderColor: Colors.BORDER, fontSize: getFontSize(16), borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: "#F8FAFC" }}
+                            style={{ width: "100%", borderColor: darkMode ? "#2D4154" : Colors.BORDER, fontSize: getFontSize(16), borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: darkMode ? "#0F1720" : "#F8FAFC", color: darkMode ? "#E8F0F8" : "#1B1B1B" }}
                             onChangeText={(text) => setBultos(text)}
                             keyboardType="number-pad"
                         // editable={!isLoading}
@@ -140,14 +143,14 @@ export default function ModalItem({ isVisible, setIsVisible, item, isNew = false
 
                 {(config.pidePrecio == "1" || config.pidePrecio == 1) && (
                     <View style={{ marginTop: 20, width: "100%" }}>
-                        <Text style={{ fontSize: getFontSize(14), marginBottom: 6, color: Colors.DGREY }}>Ingrese el precio</Text>
+                        <Text style={{ fontSize: getFontSize(14), marginBottom: 6, color: darkMode ? "#E8F0F8" : Colors.DGREY }}>Ingrese el precio</Text>
 
                         <TextInput
                             // autoFocus={modalVisible}
                             // ref={inputRef}
                             value={price}
                             // defaultValue={price}
-                            style={{ width: "100%", borderColor: Colors.BORDER, fontSize: getFontSize(16), borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: "#F8FAFC" }}
+                            style={{ width: "100%", borderColor: darkMode ? "#2D4154" : Colors.BORDER, fontSize: getFontSize(16), borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: darkMode ? "#0F1720" : "#F8FAFC", color: darkMode ? "#E8F0F8" : "#1B1B1B" }}
                             onChangeText={(text) => setPrice(text)}
                             keyboardType="number-pad"
                         // editable={!isLoading}

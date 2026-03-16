@@ -1,6 +1,5 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useLayoutEffect, useState } from "react";
 import { Alert, Image, Text, TouchableOpacity, View, ScrollView } from "react-native";
-// import { useNetInfo } from "@react-native-community/netinfo";
 
 import SyncItem from "@components/SyncItem";
 
@@ -14,24 +13,23 @@ import OrderDetail from "@db/OrderDetail";
 import Product from "@db/Product";
 import { getDataFromAPI } from "@libraries/api";
 
-import BrandMark from "@components/BrandMark";
-import iconSync from "@icons/sync.png";
+import iconSync from "@icons/sincronizar.png";
+import iconSyncDark from "@icons/sincronizar_b.png";
 import { syncStyle } from "@styles/SyncStyle";
 
 import { UserContext } from "@context/UserContext";
+import { useThemeConfig } from "@context/ThemeContext";
 import ProductLista from "../../libraries/db/ProductLista";
 
 export default function SyncScreen({ navigation, route }) {
+  const { firstIn = null } = route?.params || {};
 
-  const { firstIn = null } = route?.params || {}
-
-
-  const [login, loginAction] = useContext(UserContext);
-  // const netInfo = useNetInfo();
+  const [login] = useContext(UserContext);
 
   const [errorSync, setErrorSync] = useState("");
   const [showButtonSync, setShowButtonSync] = useState(true);
   const [final, setFinal] = useState(false);
+  const { darkMode } = useThemeConfig();
 
   const [showLoaderConfig, setShowLoaderConfig] = useState(true);
   const [showLoaderRubro, setShowLoaderRubro] = useState(true);
@@ -47,137 +45,116 @@ export default function SyncScreen({ navigation, route }) {
   const [statusMessage, setStatusMessage] = useState("");
 
   const REQUEST_TIMEOUT_MS = 60000;
+
   const fetchWithTimeout = async (endpoint, message) => {
     setStatusMessage(message);
-    console.log("[SYNC] start", endpoint);
     const timeout = new Promise((_, reject) =>
       setTimeout(() => reject(new Error(`Timeout en ${endpoint}`)), REQUEST_TIMEOUT_MS)
     );
-    const data = await Promise.race([getDataFromAPI(endpoint), timeout]);
-    console.log("[SYNC] done", endpoint, data?.status_code);
-    return data;
+    return Promise.race([getDataFromAPI(endpoint), timeout]);
   };
 
-
   const createTables = async () => {
-    // await Payment.dropTable();
     await Category.createTable();
     await Account.createTable();
     await Family.createTable();
     await Order.createTable();
     await OrderDetail.createTable();
-
     await Product.createTable();
     await ProductLista.createTable();
+    await Product.ensureBarcodeColumns();
+    await ProductLista.ensureBarcodeColumns();
+    await Product.ensureIndexes();
   };
 
   async function syncData() {
     setShowButtonSync(false);
 
     try {
-    await Configuration.createTable();
-    await Configuration.setConfigValue("SYNC_IN_PROGRESS", 1);
-    await createTables();
+      await Configuration.createTable();
+      await Configuration.setConfigValue("SYNC_IN_PROGRESS", 1);
+      await createTables();
 
-    // Omitidos de la sincronizacion
-    setShowLoaderVendedor(false);
-    setShowLoaderPayments(false);
-    setShowLoaderServices(false);
-    setShowLoaderDatosVisita(false);
-    setShowLoaderArticulosListas(false);
+      setShowLoaderVendedor(false);
+      setShowLoaderPayments(false);
+      setShowLoaderServices(false);
+      setShowLoaderDatosVisita(false);
+      setShowLoaderArticulosListas(false);
 
-    let props = {};
-    let objectArray = [];
-    let data;
+      let props = {};
+      let objectArray = [];
+      let data;
 
-    //Configuración del vendedor
-    const currentApiUri = await Configuration.getConfigValue("API_URI");
-    console.log("[SYNC] API_URI", currentApiUri);
-    data = await fetchWithTimeout(`seller/config/${login.user.user ?? "1"}`, "Sincronizando configuracion...");
+      data = await fetchWithTimeout(`seller/config/${login.user.user ?? "1"}`, "Sincronizando configuracion...");
 
-    if (!data.error) {
-      const protectedKeys = new Set([
-        "API_URI",
-        "ALFA_ACCOUNT",
-        "PASSWORD_SYNC",
-        "USERNAME_SYNC",
-        "ALFA_DATABASE_ID",
-      ]);
-      for (const item of data.data) {
-        if (protectedKeys.has(item.key)) {
-          const currentValue = await Configuration.getConfigValue(item.key);
-          if (currentValue !== null && currentValue !== undefined && currentValue !== "") {
-            continue;
+      if (!data.error) {
+        const protectedKeys = new Set([
+          "API_URI",
+          "ALFA_ACCOUNT",
+          "PASSWORD_SYNC",
+          "USERNAME_SYNC",
+          "ALFA_DATABASE_ID",
+        ]);
+        for (const item of data.data) {
+          if (protectedKeys.has(item.key)) {
+            const currentValue = await Configuration.getConfigValue(item.key);
+            if (currentValue !== null && currentValue !== undefined && currentValue !== "") {
+              continue;
+            }
           }
+          await Configuration.setConfigValue(item.key, item.value);
         }
-        await Configuration.setConfigValue(item.key, item.value);
-        // Configuration.setConfigValue(item.key, item.value == "SI" ? 1 : 0);
+        updateStatus("configuration");
+      } else {
+        setErrorSync(data.message);
+        return;
       }
-      updateStatus("configuration");
-    } else {
-      setErrorSync(data.message);
-      return;
-    }
 
-    // Rubros
-    // Category.createTable();
-    await Category.destroyAll();
+      await Family.destroyAll();
+      await Category.destroyAll();
 
-    data = await fetchWithTimeout("category", "Sincronizando rubros...");
-
-    if (!data.error) {
-      data.data.map((item) => {
-        props = {
-          code: item.codigo,
-          name: item.descripcion,
-        };
-        objectArray.push(props);
-      });
-
-      await bulkInsert("categories", objectArray);
-      updateStatus("rubros");
-    } else {
-      setErrorSync(data.message);
-      return;
-    }
-
-    //Familias
-    // Family.createTable();
-    await Family.destroyAll();
-
-    objectArray = [];
-
-    data = await fetchWithTimeout("family", "Sincronizando familias...");
-    if (!data.error) {
-      data.data.map((item) => {
-        props = {
-          code: item.codigo,
-          name: item.descripcion,
-        };
-        objectArray.push(props);
-      });
-
-      await bulkInsert("families", objectArray);
-      updateStatus("familias");
-    } else {
-      setErrorSync(data.message);
-      return;
-    }
-
-    //Proveedores
-    await Account.destroyAll();
-    let pages = 50;
-
-    for (let page = 1; page <= pages; page++) {
-      data = await fetchWithTimeout(`account/paginate/${page}`, `Sincronizando proveedores (pagina ${page})...`);
+      data = await fetchWithTimeout("category", "Sincronizando rubros...");
+      if (!data.error) {
+        data.data.forEach((item) => {
+          objectArray.push({
+            code: item.codigo,
+            name: item.descripcion,
+          });
+        });
+        await bulkInsert("categories", objectArray);
+        updateStatus("rubros");
+      } else {
+        setErrorSync(data.message);
+        return;
+      }
 
       objectArray = [];
+      data = await fetchWithTimeout("family", "Sincronizando familias...");
       if (!data.error) {
-        if (Object.keys(data.data).length == 0) {
-          updateStatus("proveedores");
-          break;
-        } else {
-          data.data.map((item) => {
+        data.data.forEach((item) => {
+          objectArray.push({
+            code: item.codigo,
+            name: item.descripcion,
+          });
+        });
+        await bulkInsert("families", objectArray);
+        updateStatus("familias");
+      } else {
+        setErrorSync(data.message);
+        return;
+      }
+
+      await Account.destroyAll();
+      let pages = 50;
+      for (let page = 1; page <= pages; page++) {
+        data = await fetchWithTimeout(`account/paginate/${page}`, `Sincronizando proveedores (pagina ${page})...`);
+        objectArray = [];
+        if (!data.error) {
+          if (Object.keys(data.data).length === 0) {
+            updateStatus("proveedores");
+            break;
+          }
+          data.data.forEach((item) => {
             props = {
               code: item.codigo,
               optional_code: item.codigo_opcional,
@@ -194,37 +171,35 @@ export default function SyncScreen({ navigation, route }) {
               mail: item.email,
               lista: item.lista,
             };
-
             objectArray.push(props);
           });
-        }
-
-        await bulkInsert("accounts", objectArray);
-      } else {
-        setErrorSync(data.message);
-        return;
-      }
-    }
-
-    updateStatus("proveedores");
-
-    //Articulos
-    await Product.destroyAll();
-    pages = 150;
-
-    for (let page = 1; page <= pages; page++) {
-      data = await fetchWithTimeout(`product/paginate/${page}`, `Sincronizando articulos (pagina ${page})...`);
-
-      objectArray = [];
-      if (!data.error) {
-        if (Object.keys(data.data).length == 0) {
-          updateStatus("articulos");
-          break;
+          await bulkInsert("accounts", objectArray);
         } else {
-          data.data.map((item) => {
+          setErrorSync(data.message);
+          return;
+        }
+      }
+      updateStatus("proveedores");
+
+      await Product.destroyAll();
+      pages = 150;
+      for (let page = 1; page <= pages; page++) {
+        data = await fetchWithTimeout(`product/paginate/${page}`, `Sincronizando articulos (pagina ${page})...`);
+        objectArray = [];
+        if (!data.error) {
+          if (Object.keys(data.data).length === 0) {
+            updateStatus("articulos");
+            break;
+          }
+          data.data.forEach((item) => {
             props = {
               code: item.idarticulo,
-              codigoBarras: item?.codigobarras,
+              codigoBarras: item?.codigobarras ?? item?.CODIGOBARRAS ?? item?.CodigoBarras ?? "",
+              codigoBarra1: item?.codigobarra1 ?? item?.CODIGOBARRA1 ?? item?.CodigoBarra1 ?? "",
+              codigoBarra2: item?.codigobarra2 ?? item?.CODIGOBARRA2 ?? item?.CodigoBarra2 ?? "",
+              codigoBarra3: item?.codigobarra3 ?? item?.CODIGOBARRA3 ?? item?.CodigoBarra3 ?? "",
+              codigoBarra4: item?.codigobarra4 ?? item?.CODIGOBARRA4 ?? item?.CodigoBarra4 ?? "",
+              codigoBarraDun: item?.codigobarradun ?? item?.CODIGOBARRADUN ?? item?.CodigoBarraDun ?? "",
               name: item.descripcion,
               category: item.idrubro,
               family: item.idfamilia,
@@ -243,22 +218,19 @@ export default function SyncScreen({ navigation, route }) {
               price10: item.precio10,
               cant_propuesta: item?.cantidadpropuesta,
             };
-
             objectArray.push(props);
           });
+          await bulkInsert("products", objectArray);
+        } else {
+          setErrorSync(data.message);
+          return;
         }
-        await bulkInsert("products", objectArray);
-      } else {
-        setErrorSync(data.message);
-        return;
       }
-    }
-    updateStatus("articulos");
+      updateStatus("articulos");
 
-
-    if (!errorSync) {
-      setFinal(true);
-    }
+      if (!errorSync) {
+        setFinal(true);
+      }
     } catch (e) {
       setErrorSync(e?.message || "Error en la sincronizacion.");
     } finally {
@@ -290,13 +262,12 @@ export default function SyncScreen({ navigation, route }) {
     } else if (tbl == "configuration") {
       setShowLoaderConfig(false);
     } else if (tbl == "articulos_listas") {
-      setShowLoaderArticulosListas(false)
+      setShowLoaderArticulosListas(false);
     }
   }
 
   const configVerify = async () => {
     const data = await Configuration.getConfigAPI();
-
     const API_URI = data.find((item) => item.key == "API_URI");
 
     if (API_URI === undefined) {
@@ -322,48 +293,60 @@ export default function SyncScreen({ navigation, route }) {
     configVerify();
   }, []);
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerStyle: { backgroundColor: darkMode ? "#16212D" : "#DDEAF8" },
+      headerTintColor: darkMode ? "#E8F0F8" : "#1A395A",
+      headerTitleStyle: { color: darkMode ? "#E8F0F8" : "#1A395A", fontWeight: "700" },
+    });
+  }, [navigation, darkMode]);
+
   return (
-    <View style={[syncStyle.container]}>
-      <Text style={[syncStyle.text]}>
-        El proceso de sincronización descargará rubros, familias, proveedores y artículos. Este proceso puede demorar varios
-        minutos, dependiendo de la cantidad de registros y su conexión a internet.
+    <View style={[syncStyle.container, { flex: 1 }, darkMode && { backgroundColor: "#0F1720" }]}>
+      <Text style={[syncStyle.text, darkMode && { color: "#E8F0F8" }]}>
+        El proceso de sincronizacion descargara rubros, familias, proveedores y articulos. Este proceso puede demorar varios
+        minutos, dependiendo de la cantidad de registros y su conexion a internet.
       </Text>
 
-
-      {/* {!netInfo.isConnected && <Text style={{ marginBottom: 10, color: "red" }}>No dispone de conexión a internet</Text>} */}
-
       {showButtonSync ? (
-        <TouchableOpacity activeOpacity={0.8} style={syncStyle.cardButton} onPress={syncData}>
-          <View style={syncStyle.cardIconWrap}>
-            <Image style={syncStyle.cardIcon} source={iconSync} />
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={[
+            syncStyle.cardButton,
+            darkMode && { backgroundColor: "#152332", borderColor: "#2D4154" },
+          ]}
+          onPress={syncData}
+        >
+          <View style={[syncStyle.cardIconWrap, darkMode && { backgroundColor: "#243241", borderColor: "#2D4154" }]}>
+            <Image style={syncStyle.cardIcon} source={darkMode ? iconSyncDark : iconSync} />
           </View>
-          <Text style={syncStyle.cardText}>Sincronizar</Text>
+          <Text style={[syncStyle.cardText, darkMode && { color: "#E8F0F8" }]}>Sincronizar</Text>
         </TouchableOpacity>
       ) : errorSync ? (
-        <Text style={[syncStyle.errorMessage]}>{errorSync}</Text>
+        <Text style={[syncStyle.errorMessage, darkMode && { color: "#FF8A80" }]}>{errorSync}</Text>
       ) : (
-        <ScrollView>
-          {statusMessage ? <Text style={[syncStyle.text]}>{statusMessage}</Text> : <Text></Text>}
-          <SyncItem showLoader={showLoaderConfig} text="Configuración"></SyncItem>
-          <SyncItem showLoader={showLoaderRubro} text="Rubros"></SyncItem>
-          <SyncItem showLoader={showLoaderFamilia} text="Familias"></SyncItem>
-          <SyncItem showLoader={showLoaderClientes} text="Proveedores"></SyncItem>
-          <SyncItem showLoader={showLoaderArticulos} text="Articulos"></SyncItem>
+        <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+          {statusMessage ? <Text style={[syncStyle.text, darkMode && { color: "#E8F0F8" }]}>{statusMessage}</Text> : <Text />}
+          <SyncItem showLoader={showLoaderConfig} text="Configuracion" darkMode={darkMode} />
+          <SyncItem showLoader={showLoaderRubro} text="Rubros" darkMode={darkMode} />
+          <SyncItem showLoader={showLoaderFamilia} text="Familias" darkMode={darkMode} />
+          <SyncItem showLoader={showLoaderClientes} text="Proveedores" darkMode={darkMode} />
+          <SyncItem showLoader={showLoaderArticulos} text="Articulos" darkMode={darkMode} />
         </ScrollView>
       )}
 
       {final ? (
         <View style={[syncStyle.finalText]}>
-          <Text>Sincronización finalizada</Text>
+          <Text style={{ color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>Sincronizacion finalizada</Text>
           <TouchableOpacity
-            style={[syncStyle.btnReturn]}
+            style={[syncStyle.btnReturn, darkMode && { backgroundColor: "#1F8B4C" }]}
             onPress={() => navigation.navigate("HomeScreen")}
           >
             <Text style={[syncStyle.textBtnReturn]}>Regresar</Text>
           </TouchableOpacity>
         </View>
       ) : (
-        <Text></Text>
+        <Text />
       )}
     </View>
   );

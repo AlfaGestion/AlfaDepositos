@@ -19,6 +19,11 @@ export default class ProductLista extends BaseModel {
             id: { type: types.INTEGER, primary_key: true },
             code: { type: types.TEXT },
             codigoBarras: { type: types.TEXT },
+            codigoBarra1: { type: types.TEXT },
+            codigoBarra2: { type: types.TEXT },
+            codigoBarra3: { type: types.TEXT },
+            codigoBarra4: { type: types.TEXT },
+            codigoBarraDun: { type: types.TEXT },
             name: { type: types.TEXT },
             lista: { type: types.TEXT },
             price1: { type: types.NUMERIC },
@@ -37,9 +42,27 @@ export default class ProductLista extends BaseModel {
 
     static async findLikeName(name, classPrice = 1, limit = 20) {
         const page = 1;
-        const sql = `Select code, codigoBarras, name, id, price${classPrice} as price1 from products 
-    where (name like '%${name.toLowerCase()}%' or code like '%${name.toLowerCase()}%') 
+        const sql = `Select code, codigoBarras, codigoBarra1, codigoBarra2, codigoBarra3, codigoBarra4, codigoBarraDun, name, id, price${classPrice} as price1 from products 
+    where (name like '%${name.toLowerCase()}%' or code like '%${name.toLowerCase()}%' or codigoBarras like '%${name.toLowerCase()}%' or codigoBarra1 like '%${name.toLowerCase()}%' or codigoBarra2 like '%${name.toLowerCase()}%' or codigoBarra3 like '%${name.toLowerCase()}%' or codigoBarra4 like '%${name.toLowerCase()}%' or codigoBarraDun like '%${name.toLowerCase()}%') 
     order by name ASC limit ${limit} offset ${(page - 1) * limit}`;
         return await this.repository.databaseLayer.executeSql(sql, []).then(({ rows }) => rows);
+    }
+
+    static async ensureBarcodeColumns() {
+        const sqls = [
+            "ALTER TABLE products_listas ADD COLUMN codigoBarra1 TEXT",
+            "ALTER TABLE products_listas ADD COLUMN codigoBarra2 TEXT",
+            "ALTER TABLE products_listas ADD COLUMN codigoBarra3 TEXT",
+            "ALTER TABLE products_listas ADD COLUMN codigoBarra4 TEXT",
+            "ALTER TABLE products_listas ADD COLUMN codigoBarraDun TEXT",
+        ];
+
+        for (const sql of sqls) {
+            try {
+                await this.repository.databaseLayer.executeSql(sql, []);
+            } catch (e) {
+                // ignore if column already exists
+            }
+        }
     }
 }

@@ -139,6 +139,14 @@ const buildUrl = (base, uri) => {
   return `${normalizedBase}${normalizedUri}`;
 };
 
+const getPostTimeout = (uri) => {
+  const endpoint = normalizeEndpoint(uri);
+  if (endpoint === "inventario" || endpoint === "inventario/") {
+    return 300000;
+  }
+  return 20000;
+};
+
 const normalizeEndpoint = (uri) => {
   if (!uri) return "";
   return uri.startsWith("/") ? uri.slice(1) : uri;
@@ -222,12 +230,13 @@ export const Post = async (uri, payload, token = "") => {
     }
 
     const url = buildUrl(API_URI, uri);
+    const timeoutMs = getPostTimeout(uri);
     console.log("[API][POST]", url);
-    let response = await postWithTimeout(url, payload, headers, 20000, `POST ${uri}`);
+    let response = await postWithTimeout(url, payload, headers, timeoutMs, `POST ${uri}`);
     if (!response?.ok) {
       // retry once for transient errors
       console.log("[API][POST][retry]", url, response?.status);
-      response = await postWithTimeout(url, payload, headers, 20000, `POST ${uri} retry`);
+      response = await postWithTimeout(url, payload, headers, timeoutMs, `POST ${uri} retry`);
     }
     let data = await response.json();
     return data;

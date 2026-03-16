@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getFontSize } from '../../utils/Metrics';
 import Colors from '../../styles/Colors';
 
-export default function FooterTotal() {
+export default function FooterTotal({ darkMode = false }) {
     const { getTotal, cartItems } = useCart();
     const [total, setTotal] = useState(0)
     const insets = useSafeAreaInsets();
@@ -24,8 +24,8 @@ export default function FooterTotal() {
     }, [cartItems])
 
     return (
-        <View style={{ zIndex: 99, flexDirection: "row", paddingVertical: 10, paddingHorizontal: 12, alignItems: "center", justifyContent: "center", position: "absolute", bottom: 0, paddingBottom: 10 + (insets?.bottom || 0), backgroundColor: "#F0F5FA", borderTopColor: Colors.BORDER, borderTopWidth: 1, width: "100%" }}>
-            <Text style={{ fontSize: getFontSize(22), fontWeight: "700", color: Colors.DGREY }}>$ {formatAmount(total)}</Text>
+        <View style={{ zIndex: 99, flexDirection: "row", paddingVertical: 10, paddingHorizontal: 12, alignItems: "center", justifyContent: "center", position: "absolute", bottom: 0, paddingBottom: 10 + (insets?.bottom || 0), backgroundColor: darkMode ? "#16212D" : "#F0F5FA", borderTopColor: darkMode ? "#2D4154" : Colors.BORDER, borderTopWidth: 1, width: "100%" }}>
+            <Text style={{ fontSize: getFontSize(22), fontWeight: "700", color: darkMode ? "#E8F0F8" : Colors.DGREY }}>$ {formatAmount(total)}</Text>
             {/* <TouchableOpacity onPress={() => clearCart()} style={{ backgroundColor: "#f58383", borderRadius: 20, paddingHorizontal: 15, paddingVertical: 5 }}>
                 <Text style={{ fontSize: getFontSize(20) }}>Vaciar</Text>
             </TouchableOpacity> */}

@@ -5,10 +5,11 @@ import { currencyFormat } from "@libraries/utils"
 import ProductImage from "./ProductImage";
 
 export default function ProductItem(props) {
-  // console.log(props.id)
+  const darkMode = props.darkMode === true;
+
   return (
     <TouchableOpacity onPress={() => props.navigation.navigate("ProductScreen", { id: props.id })}>
-      <View style={styles.container}>
+      <View style={[styles.container, darkMode && styles.containerDark]}>
         <View>
           {/* <Image style={styles.image} source={imgProduct}></Image> */}
 
@@ -17,11 +18,11 @@ export default function ProductItem(props) {
 
         <View style={styles.highContainer}>
           <View>
-            <Text>{props.name}</Text>
+            <Text style={[styles.text, darkMode && styles.textDark]}>{props.name}</Text>
           </View>
           <View style={styles.lowContainer}>
-            <Text># {props.code}</Text>
-            <Text style={styles.price}> {currencyFormat(props.price)}</Text>
+            <Text style={[styles.subText, darkMode && styles.subTextDark]}># {props.code}</Text>
+            <Text style={[styles.price, darkMode && styles.textDark]}> {currencyFormat(props.price)}</Text>
           </View>
         </View>
       </View>
@@ -37,6 +38,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     paddingVertical: 5,
     paddingHorizontal: 10,
+  },
+  containerDark: {
+    backgroundColor: "#152332",
+    borderBottomColor: "#2D4154",
   },
   image: {
     width: 40,
@@ -58,5 +63,17 @@ const styles = StyleSheet.create({
   },
   price: {
     textAlign: "right",
+  },
+  text: {
+    color: "#1B1B1B",
+  },
+  textDark: {
+    color: "#E8F0F8",
+  },
+  subText: {
+    color: "#555",
+  },
+  subTextDark: {
+    color: "#BFD0E0",
   },
 });

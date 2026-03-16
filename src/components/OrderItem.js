@@ -5,7 +5,8 @@ import Order from "@db/Order";
 import OrderDetail from "@db/OrderDetail";
 import Product from "@db/Product";
 import Account from "@db/Account";
-import imgOrders from "@icons/orders2.png";
+import imgOrders from "@icons/comprobante.png";
+import imgOrdersDark from "@icons/comprobante_b.png";
 import imgArca from "@icons/arca.png";
 import useTemplateShare from "../hooks/useTemplateShare";
 import usePrintAndShare from "../hooks/usePrintAndShare";
@@ -17,6 +18,7 @@ export default function OrderItem(props) {
   const { getTemplate } = useTemplateShare();
   const { generatePdf } = usePrintAndShare();
   const [login] = useContext(UserContext);
+  const darkMode = props.darkMode === true;
 
   const handleClic = async (remote) => {
     if (remote) {
@@ -90,7 +92,7 @@ export default function OrderItem(props) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, darkMode && styles.containerDark]}>
       <TouchableOpacity
         style={styles.mainTap}
         onPress={() => {
@@ -108,21 +110,21 @@ export default function OrderItem(props) {
         }}
       >
         <View>
-          <Image style={styles.image} source={(item?.ecpte == null) ? imgOrders : imgArca}></Image>
+          <Image style={styles.image} source={(item?.ecpte == null) ? (darkMode ? imgOrdersDark : imgOrders) : imgArca}></Image>
         </View>
 
         <View style={styles.highContainer}>
           <View>
-            <Text>{name}</Text>
+            <Text style={[styles.text, darkMode && styles.textDark]}>{name}</Text>
           </View>
 
           <View style={styles.lowContainer}>
-            <Text>{date}</Text>
-            <Text style={styles.price}> {currencyFormat(total || 0)}</Text>
+            <Text style={[styles.subText, darkMode && styles.subTextDark]}>{date}</Text>
+            <Text style={[styles.price, darkMode && styles.textDark]}> {currencyFormat(total || 0)}</Text>
           </View>
 
           <View>
-            <Text>{item?.tc} {item?.ecpte}</Text>
+            <Text style={[styles.subText, darkMode && styles.subTextDark]}>{item?.tc} {item?.ecpte}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -139,6 +141,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 10,
     marginVertical: 2,
+  },
+  containerDark: {
+    backgroundColor: "#152332",
+    borderBottomColor: "#2D4154",
   },
   mainTap: {
     flexDirection: "row",
@@ -165,5 +171,17 @@ const styles = StyleSheet.create({
   },
   price: {
     textAlign: "right",
+  },
+  text: {
+    color: "#1B1B1B",
+  },
+  textDark: {
+    color: "#E8F0F8",
+  },
+  subText: {
+    color: "#444",
+  },
+  subTextDark: {
+    color: "#BFD0E0",
   },
 });

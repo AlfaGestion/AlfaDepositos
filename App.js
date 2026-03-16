@@ -1,6 +1,7 @@
 import { StatusBar } from "expo-status-bar";
 import { Text, TextInput } from "react-native";
 import { UserProvider } from "@context/UserContext";
+import { ThemeProvider, useThemeConfig } from "@context/ThemeContext";
 // Importa CartProvider desde el archivo donde vive el hook
 import { CartProvider } from "./src/hooks/useCart"; // <--- Ajusta esta ruta a la real
 import HomeStack from "@routes/homeStack"
@@ -12,14 +13,26 @@ Text.defaultProps.style = [{ fontFamily: Fonts.body, color: Colors.DGREY }, Text
 TextInput.defaultProps = TextInput.defaultProps || {};
 TextInput.defaultProps.style = [{ fontFamily: Fonts.body, color: Colors.DGREY }, TextInput.defaultProps.style];
 
+function AppContent() {
+  const { darkMode } = useThemeConfig();
+
+  return (
+    <>
+      <StatusBar style={darkMode ? "light" : "dark"} backgroundColor={darkMode ? "#16212D" : Colors.WHITE} />
+      <HomeStack />
+    </>
+  );
+}
+
 const App = () => {
   return (
-    <UserProvider>
-      <CartProvider>
-        <StatusBar style="dark" backgroundColor={Colors.WHITE} />
-        <HomeStack />
-      </CartProvider>
-    </UserProvider>
+    <ThemeProvider>
+      <UserProvider>
+        <CartProvider>
+          <AppContent />
+        </CartProvider>
+      </UserProvider>
+    </ThemeProvider>
   );
 };
 

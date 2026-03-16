@@ -31,17 +31,21 @@ import CartProviderContainer from './CartProviderContainer';
 import CartStockContainer from './CartStockContainer';
 import Colors from '@styles/Colors';
 import { Fonts } from '@styles/Theme';
+import { useThemeConfig } from '@context/ThemeContext';
 
 const Stack = createStackNavigator();
 
-const HomeStack = () => (
+const HomeStack = () => {
+  const { darkMode } = useThemeConfig();
+
+  return (
   <NavigationContainer>
       <Stack.Navigator
         initialRouteName="HomeScreen"
         screenOptions={{
-          headerTintColor: Colors.DGREY,
-          headerStyle: { backgroundColor: Colors.SURFACE },
-          headerTitleStyle: { fontFamily: Fonts.display, letterSpacing: 0.4 },
+          headerTintColor: darkMode ? "#E8F0F8" : Colors.DGREY,
+          headerStyle: { backgroundColor: darkMode ? "#16212D" : Colors.SURFACE },
+          headerTitleStyle: { fontFamily: Fonts.display, letterSpacing: 0.4, color: darkMode ? "#E8F0F8" : Colors.DGREY },
         }}
       >
         <Stack.Screen
@@ -170,6 +174,7 @@ const HomeStack = () => (
         />
       </Stack.Navigator>
   </NavigationContainer>
-);
+  );
+};
 
 export default HomeStack;

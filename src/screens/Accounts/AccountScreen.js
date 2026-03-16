@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import SafeAreaView from "react-native-safe-area-view";
 
-import imgAccount from "@icons/account.png";
+import imgAccount from "@icons/clientes.png";
 import { accountScreenStyles } from "@styles/AccountStyle";
 
 import ItemLineTextValue from "@components/ItemLineTextValue";

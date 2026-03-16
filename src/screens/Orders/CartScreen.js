@@ -9,7 +9,7 @@ import FooterTotal from '../../components/Cart/FooterTotal';
 import ItemCart from '../../components/Cart/ItemCart';
 import { useRoute } from '@react-navigation/native';
 
-export default function CartScreen({ jumpTo, isActive = false }) {
+export default function CartScreen({ jumpTo, isActive = false, darkMode = false }) {
 
     const { account, cartItems } = useCart();
     const route = useRoute();
@@ -82,12 +82,15 @@ export default function CartScreen({ jumpTo, isActive = false }) {
     }, [isInventory, cartItems]);
 
     if (!account) {
-        return <View style={{ flex: 1, paddingHorizontal: 10, marginTop: 20, display: "flex" }}>
+        return <View style={{ flex: 1, paddingHorizontal: 10, marginTop: 20, display: "flex", backgroundColor: darkMode ? "#0F1720" : "transparent" }}>
             <Text
                 style={{
                     fontSize: 15,
                     marginBottom: 20,
-                    backgroundColor: "orange"
+                    backgroundColor: darkMode ? "#5A3B14" : "orange",
+                    color: darkMode ? "#F8E7C2" : "#1B1B1B",
+                    padding: 10,
+                    borderRadius: 10,
                 }}
             >
                 Primero debe seleccionar el proveedor para poder ver los precios correctos</Text>
@@ -108,9 +111,9 @@ export default function CartScreen({ jumpTo, isActive = false }) {
     };
 
     return (
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: darkMode ? "#0F1720" : "transparent" }}>
             <View style={{ paddingHorizontal: 10, paddingTop: 10 }}>
-                <Text style={{ fontSize: getFontSize(12), color: Colors.DGREY, marginBottom: 6, marginLeft: 4 }}>
+                <Text style={{ fontSize: getFontSize(12), color: darkMode ? "#E8F0F8" : Colors.DGREY, marginBottom: 6, marginLeft: 4 }}>
                     Cantidad
                 </Text>
                 <TextInput
@@ -122,33 +125,36 @@ export default function CartScreen({ jumpTo, isActive = false }) {
                     onSubmitEditing={() => codeInputRef.current?.focus?.()}
                     style={{
                         borderWidth: 1,
-                        borderColor: Colors.GREY,
-                        backgroundColor: Colors.WHITE,
+                        borderColor: darkMode ? "#2D4154" : Colors.GREY,
+                        backgroundColor: darkMode ? "#152332" : Colors.WHITE,
                         borderRadius: 10,
                         paddingHorizontal: 12,
                         paddingVertical: 10,
                         marginBottom: 10,
+                        color: darkMode ? "#E8F0F8" : "#1B1B1B",
                     }}
                 />
 
-                <Text style={{ fontSize: getFontSize(12), color: Colors.DGREY, marginBottom: 6, marginLeft: 4 }}>
-                    Código
+                <Text style={{ fontSize: getFontSize(12), color: darkMode ? "#E8F0F8" : Colors.DGREY, marginBottom: 6, marginLeft: 4 }}>
+                    Codigo
                 </Text>
                 <View style={{ flexDirection: "row", gap: 10, marginBottom: 10 }}>
                     <TextInput
                         ref={codeInputRef}
                         value={codeInput}
                         onChangeText={setCodeInput}
-                        placeholder="Ingrese el código"
+                        placeholder="Ingrese el codigo"
+                        placeholderTextColor={darkMode ? "#9CB2C8" : "#7A7A7A"}
                         onSubmitEditing={(e) => handleSearchCode(e?.nativeEvent?.text, false)}
                         style={{
                             flex: 1,
                             borderWidth: 1,
-                            borderColor: Colors.GREY,
-                            backgroundColor: Colors.WHITE,
+                            borderColor: darkMode ? "#2D4154" : Colors.GREY,
+                            backgroundColor: darkMode ? "#152332" : Colors.WHITE,
                             borderRadius: 10,
                             paddingHorizontal: 12,
                             paddingVertical: 10,
+                            color: darkMode ? "#E8F0F8" : "#1B1B1B",
                         }}
                     />
                     <TouchableOpacity
@@ -171,9 +177,9 @@ export default function CartScreen({ jumpTo, isActive = false }) {
                         }}
                         style={{
                             width: 110,
-                            backgroundColor: Colors.SURFACE,
+                            backgroundColor: darkMode ? "#152332" : Colors.SURFACE,
                             borderWidth: 1,
-                            borderColor: Colors.BORDER,
+                            borderColor: darkMode ? "#2D4154" : Colors.BORDER,
                             borderRadius: 10,
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -181,8 +187,8 @@ export default function CartScreen({ jumpTo, isActive = false }) {
                             paddingHorizontal: 8,
                         }}
                     >
-                        <Ionicons name="camera-outline" size={18} color={Colors.DBLUE} />
-                        <Text style={{ marginTop: 2, color: Colors.DGREY, fontSize: getFontSize(11) }}>
+                        <Ionicons name="camera-outline" size={18} color={darkMode ? "#8FC3FF" : Colors.DBLUE} />
+                        <Text style={{ marginTop: 2, color: darkMode ? "#E8F0F8" : Colors.DGREY, fontSize: getFontSize(11) }}>
                             Escanear
                         </Text>
                     </TouchableOpacity>
@@ -190,18 +196,18 @@ export default function CartScreen({ jumpTo, isActive = false }) {
 
                 {lastAddedItem && (
                     <View style={{
-                        backgroundColor: Colors.SURFACE,
+                        backgroundColor: darkMode ? "#152332" : Colors.SURFACE,
                         borderWidth: 1,
-                        borderColor: Colors.BORDER,
+                        borderColor: darkMode ? "#2D4154" : Colors.BORDER,
                         borderRadius: 10,
                         paddingVertical: 8,
                         paddingHorizontal: 10,
                         marginBottom: 10,
                     }}>
-                        <Text style={{ fontSize: getFontSize(24), fontWeight: "700", color: Colors.DGREY }}>
+                        <Text style={{ fontSize: getFontSize(24), fontWeight: "700", color: darkMode ? "#E8F0F8" : Colors.DGREY }}>
                             {lastAddedItem?.name || lastAddedItem?.description || lastAddedItem?.descripcion || ""}
                         </Text>
-                        <Text style={{ fontSize: getFontSize(16), fontWeight: "600", color: Colors.DGREY, marginTop: 4 }}>
+                        <Text style={{ fontSize: getFontSize(16), fontWeight: "600", color: darkMode ? "#E8F0F8" : Colors.DGREY, marginTop: 4 }}>
                             Cantidad: {lastAddedItem?.quantity || 0}
                         </Text>
                     </View>
@@ -212,27 +218,27 @@ export default function CartScreen({ jumpTo, isActive = false }) {
                         onPress={() => setShowList(true)}
                         style={{
                             flex: 1,
-                            backgroundColor: Colors.DBLUE,
+                            backgroundColor: darkMode ? "#244A72" : Colors.DBLUE,
                             paddingVertical: 12,
                             borderRadius: 10,
                             alignItems: 'center',
                             justifyContent: 'center',
                         }}
                     >
-                        <Text style={{ color: Colors.WHITE, fontWeight: '600' }}>Consultar</Text>
+                            <Text style={{ color: Colors.WHITE, fontWeight: '600' }}>Consultar</Text>
                     </TouchableOpacity>
                     {showList && (
                         <TouchableOpacity
                             onPress={() => setShowList(false)}
                             style={{
                                 width: 44,
-                                backgroundColor: Colors.GREY,
+                                backgroundColor: darkMode ? "#30465A" : Colors.GREY,
                                 borderRadius: 10,
                                 alignItems: 'center',
                                 justifyContent: 'center',
                             }}
                         >
-                            <Text style={{ color: Colors.DGREY, fontWeight: '700' }}>X</Text>
+                            <Text style={{ color: darkMode ? "#E8F0F8" : Colors.DGREY, fontWeight: '700' }}>X</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -263,27 +269,28 @@ export default function CartScreen({ jumpTo, isActive = false }) {
                 }}
                 showSearchCamera={false}
                 showFooter={false}
-                listCompact={true}
+                    listCompact={true}
+                    darkMode={darkMode}
             />
 
             <View style={{ marginTop: 10, flex: 1 }}>
-                <Text style={{ fontSize: getFontSize(13), color: Colors.DGREY, marginLeft: 10, marginBottom: 6 }}>
+                <Text style={{ fontSize: getFontSize(13), color: darkMode ? "#E8F0F8" : Colors.DGREY, marginLeft: 10, marginBottom: 6 }}>
                     Items escaneados: {cartItems?.length || 0}
                 </Text>
                 {(cartItems?.length > 0 || lastAddedItem) ? (
                     <FlatList
                         data={cartItems?.length > 0 ? [...cartItems].sort((a, b) => (b._addedAt || 0) - (a._addedAt || 0)) : [lastAddedItem]}
                         keyExtractor={(item, idx) => `${item.code}_${idx}`}
-                        renderItem={({ item }) => <ItemCart item={item} priceClass={account?.priceClass ?? 1} showImage={false} compact={true} />}
+                        renderItem={({ item }) => <ItemCart item={item} priceClass={account?.priceClass ?? 1} showImage={false} compact={true} darkMode={darkMode} />}
                         ListFooterComponent={<View />}
                         ListFooterComponentStyle={{ height: 120 }}
                         extraData={lastAddedAt}
                     />
                 ) : (
-                    <Text style={{ marginLeft: 10, color: Colors.GREY }}>Todavía no hay artículos.</Text>
+                    <Text style={{ marginLeft: 10, color: darkMode ? "#9CB2C8" : Colors.GREY }}>Todavia no hay articulos.</Text>
                 )}
             </View>
-            {!isInventory && <FooterTotal />}
+            {!isInventory && <FooterTotal darkMode={darkMode} />}
         </View>
     )
 

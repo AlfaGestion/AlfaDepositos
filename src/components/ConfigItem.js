@@ -4,15 +4,17 @@ import Colors from "@styles/Colors";
 import { Fonts } from "@styles/Theme";
 
 export default function ConfigItem(props) {
+  const darkMode = props.darkMode === true;
+
   return (
     <View>
       {props.type == "input" ? (
         <View>
-          <Text style={styles.textTitle}>{props.title}</Text>
+          <Text style={[styles.textTitle, darkMode && styles.textTitleDark]}>{props.title}</Text>
           <TextInput
-            style={styles.textInput}
+            style={[styles.textInput, darkMode && styles.textInputDark]}
             placeholder={props.placeholder}
-            placeholderTextColor={Colors.MUTED}
+            placeholderTextColor={darkMode ? "#9CB2C8" : Colors.MUTED}
             onChangeText={(text) => props.handleChange(props.field, text)}
             value={props.value}
             keyboardType={props.keyboardType ? props.keyboardType : "default"}
@@ -24,8 +26,9 @@ export default function ConfigItem(props) {
             value={props.value}
             onValueChange={(text) => props.handleChange(props.field, text)}
             style={styles.checkbox}
+            color={darkMode ? "#8FC3FF" : Colors.DBLUE}
           />
-          <Text style={styles.label}>{props.title}</Text>
+          <Text style={[styles.label, darkMode && styles.labelDark]}>{props.title}</Text>
         </View>
       ) : (
         <Text></Text>
@@ -42,6 +45,9 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     letterSpacing: 0.3,
   },
+  textTitleDark: {
+    color: "#E8F0F8",
+  },
   textInput: {
     paddingVertical: 10,
     paddingHorizontal: 12,
@@ -52,6 +58,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.SURFACE,
     color: Colors.BLACK,
     fontFamily: Fonts.body,
+  },
+  textInputDark: {
+    backgroundColor: "#152332",
+    borderColor: "#2D4154",
+    color: "#E8F0F8",
   },
   checkboxContainer: {
     flexDirection: "row",
@@ -65,5 +76,8 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: Colors.BLACK,
     fontFamily: Fonts.body,
+  },
+  labelDark: {
+    color: "#E8F0F8",
   },
 });

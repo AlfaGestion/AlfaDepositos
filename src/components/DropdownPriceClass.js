@@ -5,7 +5,7 @@ import DropDownPicker from "react-native-dropdown-picker";
 import { getFontSize } from "../utils/Metrics";
 import Colors from "@styles/Colors";
 
-export default function DropdownPriceClass({ priceClass, setPriceClass }) {
+export default function DropdownPriceClass({ priceClass, setPriceClass, darkMode = false }) {
   const [items, setItems] = useState([
     { label: "Clase 1", value: 1 },
     { label: "Clase 2", value: 2 },
@@ -32,7 +32,7 @@ export default function DropdownPriceClass({ priceClass, setPriceClass }) {
   return (
     <>
       {/* <Text style={{ fontSize: getFontSize(18), marginBottom: 10, display: "flex", fontWeight: "500" }}>CLASE DE PRECIO</Text> */}
-      <Text style={{ fontSize: getFontSize(17), marginBottom: 10, display: "flex", fontWeight: "400", backgroundColor: Colors.PRIMARY, color: "white", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>CLASE DE PRECIO</Text>
+      <Text style={{ fontSize: getFontSize(17), marginBottom: 10, display: "flex", fontWeight: "400", backgroundColor: darkMode ? "#243241" : Colors.PRIMARY, color: "white", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>CLASE DE PRECIO</Text>
 
       <DropDownPicker
         open={open}
@@ -47,17 +47,21 @@ export default function DropdownPriceClass({ priceClass, setPriceClass }) {
         setItems={setItems}
         placeholder="Clase de precio"
         disabled={!canChangePriceClass}
-        style={styles.selecPriceClass}
+        style={[styles.selecPriceClass, darkMode && { backgroundColor: "#152332", borderColor: "#2D4154" }]}
         listMode="SCROLLVIEW"
-        textStyle={{ fontSize: getFontSize(18) }}
+        textStyle={{ fontSize: getFontSize(18), color: darkMode ? "#E8F0F8" : "#1B1B1B" }}
+        placeholderStyle={{ color: darkMode ? "#9CB2C8" : "#6D6D6D" }}
+        dropDownContainerStyle={{
+          position: 'relative',
+          top: 0,
+          backgroundColor: darkMode ? "#152332" : "#FFFFFF",
+          borderColor: darkMode ? "#2D4154" : Colors.GREY,
+        }}
+        listItemLabelStyle={{ color: darkMode ? "#E8F0F8" : "#1B1B1B" }}
+        selectedItemLabelStyle={{ color: darkMode ? "#FFFFFF" : Colors.DBLUE, fontWeight: "600" }}
 
         scrollViewProps={{
           nestedScrollEnabled: true,
-        }}
-        // style={{ marginBottom: 20 }}
-        dropDownContainerStyle={{
-          position: 'relative',
-          top: 0
         }}
       />
     </>

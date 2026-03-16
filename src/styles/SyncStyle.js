@@ -190,12 +190,19 @@ const cSyncItemStyles = StyleSheet.create({
     fontFamily: Fonts.body,
     color: Colors.DGREY,
   },
+  syncTextDark: {
+    color: "#E8F0F8",
+  },
   loaderContainer: {
     marginLeft: 20,
     width: 140,
     flexDirection: "row",
     justifyContent: "flex-start",
     alignItems: "center",
+    paddingVertical: 4,
+  },
+  loaderContainerDark: {
+    width: 180,
   },
   loader: {
     marginRight: 10,

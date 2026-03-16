@@ -4,7 +4,7 @@ import { Fonts, Shadow } from "@styles/Theme";
 
 import alfaLogo from "../../assets/alfa_new_logo_editable.png";
 
-export default function BrandMark({ label = "Alfa Depósitos", size = 64, logoSource = alfaLogo }) {
+export default function BrandMark({ label = "Alfa Depositos", size = 64, logoSource = alfaLogo, darkMode = false }) {
   const logoSize = size;
 
   return (
@@ -14,7 +14,7 @@ export default function BrandMark({ label = "Alfa Depósitos", size = 64, logoSo
         style={[styles.logo, { width: logoSize, height: logoSize }]}
         resizeMode="contain"
       />
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, darkMode && styles.labelDark]}>{label}</Text>
     </View>
   );
 }
@@ -36,5 +36,11 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.display,
     fontSize: 20,
     color: Colors.DGREY,
+  },
+  labelDark: {
+    color: "#E8F0F8",
+    textShadowColor: "rgba(0,0,0,0.35)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 });

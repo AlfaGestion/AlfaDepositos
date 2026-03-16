@@ -13,7 +13,7 @@ import FooterTotal from "./Cart/FooterTotal";
 import ItemCart from "./Cart/ItemCart";
 import ModalItem from "./Cart/ModalItem";
 
-export default function ListaProductos({ priceClassSelected = 1, lista = '', scanTrigger = 0, searchTrigger = 0, searchCode = "", searchQuantity = 1, autoAddOnManualSearch = false, hideList = false, autoAddOnScan = false, scanQuantity = 1, onAutoAdd, showSearchCamera = true, searchAutoFocus = true, fillHeight = true, showFooter = true, listCompact = false, isActive = true }) {
+export default function ListaProductos({ priceClassSelected = 1, lista = '', scanTrigger = 0, searchTrigger = 0, searchCode = "", searchQuantity = 1, autoAddOnManualSearch = false, hideList = false, autoAddOnScan = false, scanQuantity = 1, onAutoAdd, showSearchCamera = true, searchAutoFocus = true, fillHeight = true, showFooter = true, listCompact = false, isActive = true, darkMode = false }) {
     const { passValidations, addManyToCart, noPermiteDuplicarItem, cartItems } = useCart();
     const effectivePriceClass = priceClassSelected || 1;
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -116,7 +116,16 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                 pendingSelected && normalize(pendingSelected.code) === normalize(rawCode);
             const localList = [...(productsSearch || []), ...(defaultProducts || [])];
             const localMatch = localList.find((p) => {
-                return normalize(p?.code) === normalize(rawCode) || normalize(p?.codigoBarras) === normalize(rawCode);
+                const normalizedRawCode = normalize(rawCode);
+                return [
+                    p?.code,
+                    p?.codigoBarras,
+                    p?.codigoBarra1,
+                    p?.codigoBarra2,
+                    p?.codigoBarra3,
+                    p?.codigoBarra4,
+                    p?.codigoBarraDun,
+                ].some((value) => normalize(value) === normalizedRawCode);
             });
             const effectiveQty = manualQty || manualSelectedQty;
             if (localMatch) {
@@ -313,10 +322,19 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
             const normalize = (c) => String(c ?? "").replace(/[^0-9a-z]/gi, "");
             const map = new Map();
             (rows || []).forEach((r) => {
-                map.set(normalize(r.code), r);
-                if (r.codigoBarras) {
-                    map.set(normalize(r.codigoBarras), r);
-                }
+                [
+                    r.code,
+                    r.codigoBarras,
+                    r.codigoBarra1,
+                    r.codigoBarra2,
+                    r.codigoBarra3,
+                    r.codigoBarra4,
+                    r.codigoBarraDun,
+                ].forEach((value) => {
+                    if (value) {
+                        map.set(normalize(value), r);
+                    }
+                });
             });
 
             let missing = [];
@@ -521,12 +539,18 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                 isVisible={isModalVisible}
                 setIsVisible={setIsModalVisible}
                 item={item}
+                darkMode={darkMode}
                 initialQuantity={
                     manualSelectedQty
                         ? manualSelectedQty
                         : pendingSelected && (
                             normalize(pendingSelected.code) === normalize(item?.code) ||
-                            normalize(pendingSelected.code) === normalize(item?.codigoBarras)
+                            normalize(pendingSelected.code) === normalize(item?.codigoBarras) ||
+                            normalize(pendingSelected.code) === normalize(item?.codigoBarra1) ||
+                            normalize(pendingSelected.code) === normalize(item?.codigoBarra2) ||
+                            normalize(pendingSelected.code) === normalize(item?.codigoBarra3) ||
+                            normalize(pendingSelected.code) === normalize(item?.codigoBarra4) ||
+                            normalize(pendingSelected.code) === normalize(item?.codigoBarraDun)
                         )
                             ? pendingSelected.qty
                             : null
@@ -536,7 +560,12 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                     if (pendingSelected && item) {
                         const match =
                             normalize(pendingSelected.code) === normalize(item.code) ||
-                            normalize(pendingSelected.code) === normalize(item.codigoBarras);
+                            normalize(pendingSelected.code) === normalize(item.codigoBarras) ||
+                            normalize(pendingSelected.code) === normalize(item.codigoBarra1) ||
+                            normalize(pendingSelected.code) === normalize(item.codigoBarra2) ||
+                            normalize(pendingSelected.code) === normalize(item.codigoBarra3) ||
+                            normalize(pendingSelected.code) === normalize(item.codigoBarra4) ||
+                            normalize(pendingSelected.code) === normalize(item.codigoBarraDun);
                         if (match) {
                             setPendingScans((prev) => prev.filter((p) => normalize(p.code) !== normalize(pendingSelected.code)));
                         }
@@ -556,7 +585,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                         style={StyleSheet.absoluteFillObject}
                     />
                     <View style={styles.overlay}>
-                        <Text style={styles.scanText}>Encuadre el código de barras</Text>
+                        <Text style={styles.scanText}>Encuadre el codigo de barras</Text>
                         <TouchableOpacity 
                             onPress={() => {
                                 scanningRef.current = false;
@@ -593,12 +622,13 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
 
             {!hideList && (
                 <>
-                    <View style={styles.searchContainer}>
+                    <View style={[styles.searchContainer, darkMode && styles.searchContainerDark]}>
                         <TextInput
                             ref={refInput}
                             autoFocus={searchAutoFocus}
-                            style={{ marginVertical: 10, width: "75%", padding: 10 }}
-                            placeholder="Descripción o código"
+                            style={{ marginVertical: 10, width: "75%", padding: 10, color: darkMode ? "#E8F0F8" : "#1B1B1B" }}
+                            placeholder="Descripcion o codigo"
+                            placeholderTextColor={darkMode ? "#9CB2C8" : "#7A7A7A"}
                             onChangeText={(text) => loadProducts(text)}
                             onSubmitEditing={() => searchByCode(productSearchText)}
                             value={productSearchText}
@@ -608,7 +638,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                             {productSearchText?.length > 0 && (
                                 <TouchableOpacity onPress={() => loadProducts("")} style={styles.clearBtn}>
-                                    <Text>X</Text>
+                                    <Text style={{ color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>X</Text>
                                 </TouchableOpacity>
                             )}
                             
@@ -622,15 +652,15 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                                     }} 
                                     style={styles.cameraBtn}
                                 >
-                                     <Ionicons name="camera-outline" size={22} color={Colors.DBLUE} /> 
+                                     <Ionicons name="camera-outline" size={22} color={darkMode ? "#8FC3FF" : Colors.DBLUE} /> 
                                 </TouchableOpacity>
                             )}
                         </View>
                     </View>
                     {pendingScans.length > 0 && (
                         <View style={{ paddingHorizontal: 10, marginBottom: 10 }}>
-                            <Text style={{ fontSize: getFontSize(14), marginBottom: 6 }}>Pendientes: {pendingScans.length}</Text>
-                            <View style={{ backgroundColor: "#f7f7f7", borderWidth: 1, borderColor: Colors.GREY, borderRadius: 6, padding: 8 }}>
+                            <Text style={{ fontSize: getFontSize(14), marginBottom: 6, color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>Pendientes: {pendingScans.length}</Text>
+                            <View style={{ backgroundColor: darkMode ? "#152332" : "#f7f7f7", borderWidth: 1, borderColor: darkMode ? "#2D4154" : Colors.GREY, borderRadius: 6, padding: 8 }}>
                                 {pendingScans.map((p, idx) => (
                                     <TouchableOpacity
                                         key={`${p.code}_${idx}`}
@@ -640,8 +670,8 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                                             searchByCode(p.code, true);
                                         }}
                                     >
-                                        <Text>{p.code}</Text>
-                                        <Text>x {p.qty}</Text>
+                                        <Text style={{ color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>{p.code}</Text>
+                                        <Text style={{ color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>x {p.qty}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
@@ -651,11 +681,11 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                         </View>
                     )}
 
-                    {isLoading && <ActivityIndicator size="large" color={Colors.MAIN} />}
+                    {isLoading && <ActivityIndicator size="large" color={darkMode ? "#8FC3FF" : Colors.MAIN} />}
 
                     {(!isLoading && Array.isArray(productsSearch) && productsSearch.length > 0) && (
                         <FlatList
-                            style={{ backgroundColor: "#ececec", paddingHorizontal: 10 }}
+                            style={{ backgroundColor: darkMode ? "#0F1720" : "#ececec", paddingHorizontal: 10 }}
                             data={productsSearch}
                             keyExtractor={(item) => item.id + ""}
                             renderItem={({ item }) => (
@@ -664,19 +694,20 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                                     item={item}
                                     showImage={!listCompact}
                                     compact={listCompact}
+                                    darkMode={darkMode}
                                 />
                             )}
                         />
                     )}
                     {(!isLoading && Array.isArray(productsSearch) && productsSearch.length === 0) && (
                         <View style={{ alignItems: "center", marginTop: 20 }}>
-                            <Text style={{ color: Colors.GREY }}>No hay artículos para mostrar.</Text>
+                            <Text style={{ color: darkMode ? "#9CB2C8" : Colors.GREY }}>No hay articulos para mostrar.</Text>
                             <TouchableOpacity onPress={() => loadProducts("")} style={{ marginTop: 10 }}>
-                                <Text style={{ color: Colors.DBLUE, fontWeight: "600" }}>Reintentar</Text>
+                                <Text style={{ color: darkMode ? "#8FC3FF" : Colors.DBLUE, fontWeight: "600" }}>Reintentar</Text>
                             </TouchableOpacity>
                         </View>
                     )}
-                    {showFooter && <FooterTotal />}
+                    {showFooter && <FooterTotal darkMode={darkMode} />}
                 </>
             )}
         </View>
@@ -694,6 +725,10 @@ const styles = StyleSheet.create({
         alignItems: "center", 
         justifyContent: "space-between",
         paddingHorizontal: 10
+    },
+    searchContainerDark: {
+        borderColor: "#2D4154",
+        backgroundColor: "#152332",
     },
     cameraBtn: {
         backgroundColor: 'transparent',

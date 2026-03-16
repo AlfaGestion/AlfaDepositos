@@ -19,6 +19,11 @@ export default class Product extends BaseModel {
       id: { type: types.INTEGER, primary_key: true },
       code: { type: types.TEXT },
       codigoBarras: { type: types.TEXT },
+      codigoBarra1: { type: types.TEXT },
+      codigoBarra2: { type: types.TEXT },
+      codigoBarra3: { type: types.TEXT },
+      codigoBarra4: { type: types.TEXT },
+      codigoBarraDun: { type: types.TEXT },
       name: { type: types.TEXT },
       category: { type: types.TEXT },
       family: { type: types.TEXT },
@@ -45,34 +50,42 @@ export default class Product extends BaseModel {
     const searchLike = `%${search}%`;
     let sql;
     if (lista == '' || lista == null || lista == undefined) {
-      sql = `Select cant_propuesta,code, codigoBarras, name, id, price${classPrice} from products 
-    where (lower(name) like ? or lower(code) like ? or lower(codigoBarras) like ?) 
+      sql = `Select cant_propuesta,code, codigoBarras, codigoBarra1, codigoBarra2, codigoBarra3, codigoBarra4, codigoBarraDun, name, id, price${classPrice} from products 
+    where (lower(name) like ? or lower(code) like ? or lower(codigoBarras) like ? or lower(codigoBarra1) like ? or lower(codigoBarra2) like ? or lower(codigoBarra3) like ? or lower(codigoBarra4) like ? or lower(codigoBarraDun) like ?) 
     order by name ASC limit ${limit} offset ${(page - 1) * limit}`;
     } else {
-      sql = `Select cant_propuesta,code, codigoBarras, name, id, price${classPrice} from products_listas 
-    where lista='${lista}' and (lower(name) like ? or lower(code) like ? or lower(codigoBarras) like ?) 
+      sql = `Select cant_propuesta,code, codigoBarras, codigoBarra1, codigoBarra2, codigoBarra3, codigoBarra4, codigoBarraDun, name, id, price${classPrice} from products_listas 
+    where lista='${lista}' and (lower(name) like ? or lower(code) like ? or lower(codigoBarras) like ? or lower(codigoBarra1) like ? or lower(codigoBarra2) like ? or lower(codigoBarra3) like ? or lower(codigoBarra4) like ? or lower(codigoBarraDun) like ?) 
     order by name ASC limit ${limit} offset ${(page - 1) * limit}`;
     }
-    // console.log(sql)
-    return await this.repository.databaseLayer.executeSql(sql, [searchLike, searchLike, searchLike]).then(({ rows }) => rows);
+    return await this.repository.databaseLayer.executeSql(sql, [searchLike, searchLike, searchLike, searchLike, searchLike, searchLike, searchLike, searchLike]).then(({ rows }) => rows);
   }
 
   static async findByCode(code, lista = '') {
     const rawCode = String(code ?? "").trim();
     const searchCode = rawCode;
-    const normalizedCode = rawCode.replace(/[^0-9a-z]/gi, "");
+    const normalizedCode = rawCode.replace(/\s+/g, "").replace(/[^0-9a-z]/gi, "");
     if (!searchCode) return [];
 
-    const select = `SELECT cant_propuesta, code, codigoBarras, name, id, price1, price2, price3, price4, price5, price6, price7, price8, price9, price10`;
+    const select = `SELECT cant_propuesta, code, codigoBarras, codigoBarra1, codigoBarra2, codigoBarra3, codigoBarra4, codigoBarraDun, name, id, price1, price2, price3, price4, price5, price6, price7, price8, price9, price10`;
+    const barcodeWhere = `(
+      trim(code) = ? OR replace(trim(code), ' ', '') = ? OR
+      trim(codigoBarras) = ? OR replace(trim(codigoBarras), ' ', '') = ? OR
+      trim(codigoBarra1) = ? OR replace(trim(codigoBarra1), ' ', '') = ? OR
+      trim(codigoBarra2) = ? OR replace(trim(codigoBarra2), ' ', '') = ? OR
+      trim(codigoBarra3) = ? OR replace(trim(codigoBarra3), ' ', '') = ? OR
+      trim(codigoBarra4) = ? OR replace(trim(codigoBarra4), ' ', '') = ? OR
+      trim(codigoBarraDun) = ? OR replace(trim(codigoBarraDun), ' ', '') = ?
+    )`;
 
     if (lista != '' && lista != null && lista != undefined) {
       const sqlListas = `
         ${select}
         FROM products_listas
-        WHERE lista=? AND (code = ? OR codigoBarras = ?)
+        WHERE lista=? AND ${barcodeWhere}
         ORDER BY name ASC LIMIT 1`;
 
-      let rowsListas = await this.repository.databaseLayer.executeSql(sqlListas, [lista, searchCode, searchCode]).then(({ rows }) => rows);
+      let rowsListas = await this.repository.databaseLayer.executeSql(sqlListas, [lista, searchCode, normalizedCode, searchCode, normalizedCode, searchCode, normalizedCode, searchCode, normalizedCode, searchCode, normalizedCode, searchCode, normalizedCode, searchCode, normalizedCode]).then(({ rows }) => rows);
       if (rowsListas && rowsListas.length > 0) {
         return rowsListas;
       }
@@ -81,9 +94,16 @@ export default class Product extends BaseModel {
         const sqlListasNorm = `
           ${select}
           FROM products_listas
-          WHERE lista=? AND (replace(replace(codigoBarras,'-',''),' ','') = ?)
+          WHERE lista=? AND (
+            replace(replace(codigoBarras,'-',''),' ','') = ? OR
+            replace(replace(codigoBarra1,'-',''),' ','') = ? OR
+            replace(replace(codigoBarra2,'-',''),' ','') = ? OR
+            replace(replace(codigoBarra3,'-',''),' ','') = ? OR
+            replace(replace(codigoBarra4,'-',''),' ','') = ? OR
+            replace(replace(codigoBarraDun,'-',''),' ','') = ?
+          )
           ORDER BY name ASC LIMIT 1`;
-        rowsListas = await this.repository.databaseLayer.executeSql(sqlListasNorm, [lista, normalizedCode]).then(({ rows }) => rows);
+        rowsListas = await this.repository.databaseLayer.executeSql(sqlListasNorm, [lista, normalizedCode, normalizedCode, normalizedCode, normalizedCode, normalizedCode, normalizedCode]).then(({ rows }) => rows);
         if (rowsListas && rowsListas.length > 0) {
           return rowsListas;
         }
@@ -93,10 +113,10 @@ export default class Product extends BaseModel {
     const sql = `
       ${select}
       FROM products
-      WHERE (code = ? OR codigoBarras = ?)
+      WHERE ${barcodeWhere}
       ORDER BY name ASC LIMIT 1`;
 
-    let rows = await this.repository.databaseLayer.executeSql(sql, [searchCode, searchCode]).then(({ rows }) => rows);
+    let rows = await this.repository.databaseLayer.executeSql(sql, [searchCode, normalizedCode, searchCode, normalizedCode, searchCode, normalizedCode, searchCode, normalizedCode, searchCode, normalizedCode, searchCode, normalizedCode, searchCode, normalizedCode]).then(({ rows }) => rows);
     if (rows && rows.length > 0) {
       return rows;
     }
@@ -105,9 +125,16 @@ export default class Product extends BaseModel {
       const sqlNorm = `
         ${select}
         FROM products
-        WHERE (replace(replace(codigoBarras,'-',''),' ','') = ?)
+        WHERE (
+          replace(replace(codigoBarras,'-',''),' ','') = ? OR
+          replace(replace(codigoBarra1,'-',''),' ','') = ? OR
+          replace(replace(codigoBarra2,'-',''),' ','') = ? OR
+          replace(replace(codigoBarra3,'-',''),' ','') = ? OR
+          replace(replace(codigoBarra4,'-',''),' ','') = ? OR
+          replace(replace(codigoBarraDun,'-',''),' ','') = ?
+        )
         ORDER BY name ASC LIMIT 1`;
-      rows = await this.repository.databaseLayer.executeSql(sqlNorm, [normalizedCode]).then(({ rows }) => rows);
+      rows = await this.repository.databaseLayer.executeSql(sqlNorm, [normalizedCode, normalizedCode, normalizedCode, normalizedCode, normalizedCode, normalizedCode]).then(({ rows }) => rows);
       if (rows && rows.length > 0) {
         return rows;
       }
@@ -120,8 +147,18 @@ export default class Product extends BaseModel {
     const sqls = [
       "CREATE INDEX IF NOT EXISTS idx_products_code ON products(code)",
       "CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(codigoBarras)",
+      "CREATE INDEX IF NOT EXISTS idx_products_barcode1 ON products(codigoBarra1)",
+      "CREATE INDEX IF NOT EXISTS idx_products_barcode2 ON products(codigoBarra2)",
+      "CREATE INDEX IF NOT EXISTS idx_products_barcode3 ON products(codigoBarra3)",
+      "CREATE INDEX IF NOT EXISTS idx_products_barcode4 ON products(codigoBarra4)",
+      "CREATE INDEX IF NOT EXISTS idx_products_barcodedun ON products(codigoBarraDun)",
       "CREATE INDEX IF NOT EXISTS idx_products_listas_lista_code ON products_listas(lista, code)",
       "CREATE INDEX IF NOT EXISTS idx_products_listas_lista_barcode ON products_listas(lista, codigoBarras)",
+      "CREATE INDEX IF NOT EXISTS idx_products_listas_lista_barcode1 ON products_listas(lista, codigoBarra1)",
+      "CREATE INDEX IF NOT EXISTS idx_products_listas_lista_barcode2 ON products_listas(lista, codigoBarra2)",
+      "CREATE INDEX IF NOT EXISTS idx_products_listas_lista_barcode3 ON products_listas(lista, codigoBarra3)",
+      "CREATE INDEX IF NOT EXISTS idx_products_listas_lista_barcode4 ON products_listas(lista, codigoBarra4)",
+      "CREATE INDEX IF NOT EXISTS idx_products_listas_lista_barcodedun ON products_listas(lista, codigoBarraDun)",
     ];
 
     for (const sql of sqls) {
@@ -137,12 +174,20 @@ export default class Product extends BaseModel {
     const rawCodes = Array.from(new Set((codes || []).map(c => String(c ?? "").trim()).filter(Boolean)));
     if (rawCodes.length === 0) return [];
 
-    const normalizedCodes = Array.from(new Set(rawCodes.map(c => c.replace(/[^0-9a-z]/gi, ""))));
+    const normalizedCodes = Array.from(new Set(rawCodes.map(c => c.replace(/\s+/g, "").replace(/[^0-9a-z]/gi, ""))));
 
-    const select = `SELECT cant_propuesta, code, codigoBarras, name, id, price1, price2, price3, price4, price5, price6, price7, price8, price9, price10`;
+    const select = `SELECT cant_propuesta, code, codigoBarras, codigoBarra1, codigoBarra2, codigoBarra3, codigoBarra4, codigoBarraDun, name, id, price1, price2, price3, price4, price5, price6, price7, price8, price9, price10`;
     const inRaw = rawCodes.map(() => "?").join(",");
 
-    const exactWhere = `(trim(code) IN (${inRaw}) OR trim(codigoBarras) IN (${inRaw}))`;
+    const exactWhere = `(
+      trim(code) IN (${inRaw}) OR replace(trim(code), ' ', '') IN (${inRaw}) OR
+      trim(codigoBarras) IN (${inRaw}) OR replace(trim(codigoBarras), ' ', '') IN (${inRaw}) OR
+      trim(codigoBarra1) IN (${inRaw}) OR replace(trim(codigoBarra1), ' ', '') IN (${inRaw}) OR
+      trim(codigoBarra2) IN (${inRaw}) OR replace(trim(codigoBarra2), ' ', '') IN (${inRaw}) OR
+      trim(codigoBarra3) IN (${inRaw}) OR replace(trim(codigoBarra3), ' ', '') IN (${inRaw}) OR
+      trim(codigoBarra4) IN (${inRaw}) OR replace(trim(codigoBarra4), ' ', '') IN (${inRaw}) OR
+      trim(codigoBarraDun) IN (${inRaw}) OR replace(trim(codigoBarraDun), ' ', '') IN (${inRaw})
+    )`;
 
     if (lista != '' && lista != null && lista != undefined) {
       const sqlListas = `
@@ -150,12 +195,12 @@ export default class Product extends BaseModel {
         FROM products_listas
         WHERE lista=? AND ${exactWhere}
       `;
-      const paramsListas = [String(lista), ...rawCodes, ...rawCodes];
+      const paramsListas = [String(lista), ...rawCodes, ...normalizedCodes, ...rawCodes, ...normalizedCodes, ...rawCodes, ...normalizedCodes, ...rawCodes, ...normalizedCodes, ...rawCodes, ...normalizedCodes, ...rawCodes, ...normalizedCodes, ...rawCodes, ...normalizedCodes];
       let rows = await this.repository.databaseLayer.executeSql(sqlListas, paramsListas).then(({ rows }) => rows);
 
       // Si hay códigos con normalización distinta, buscamos solo esos faltantes
       const normalize = (c) => String(c ?? "").replace(/[^0-9a-z]/gi, "");
-      const foundSet = new Set((rows || []).flatMap(r => [normalize(r.code), normalize(r.codigoBarras)]));
+      const foundSet = new Set((rows || []).flatMap(r => [normalize(r.code), normalize(r.codigoBarras), normalize(r.codigoBarra1), normalize(r.codigoBarra2), normalize(r.codigoBarra3), normalize(r.codigoBarra4), normalize(r.codigoBarraDun)]));
       const normMissing = normalizedCodes.filter(n => n && !foundSet.has(n) && !rawCodes.includes(n));
 
       if (normMissing.length > 0) {
@@ -163,9 +208,16 @@ export default class Product extends BaseModel {
         const sqlListasNorm = `
           ${select}
           FROM products_listas
-          WHERE lista=? AND replace(replace(codigoBarras,'-',''),' ','') IN (${inNorm})
+          WHERE lista=? AND (
+            replace(replace(codigoBarras,'-',''),' ','') IN (${inNorm}) OR
+            replace(replace(codigoBarra1,'-',''),' ','') IN (${inNorm}) OR
+            replace(replace(codigoBarra2,'-',''),' ','') IN (${inNorm}) OR
+            replace(replace(codigoBarra3,'-',''),' ','') IN (${inNorm}) OR
+            replace(replace(codigoBarra4,'-',''),' ','') IN (${inNorm}) OR
+            replace(replace(codigoBarraDun,'-',''),' ','') IN (${inNorm})
+          )
         `;
-        const rowsNorm = await this.repository.databaseLayer.executeSql(sqlListasNorm, [String(lista), ...normMissing]).then(({ rows }) => rows);
+        const rowsNorm = await this.repository.databaseLayer.executeSql(sqlListasNorm, [String(lista), ...normMissing, ...normMissing, ...normMissing, ...normMissing, ...normMissing, ...normMissing]).then(({ rows }) => rows);
         rows = [...(rows || []), ...(rowsNorm || [])];
       }
 
@@ -177,22 +229,47 @@ export default class Product extends BaseModel {
       FROM products
       WHERE ${exactWhere}
     `;
-    let rows = await this.repository.databaseLayer.executeSql(sql, [...rawCodes, ...rawCodes]).then(({ rows }) => rows);
+    let rows = await this.repository.databaseLayer.executeSql(sql, [...rawCodes, ...normalizedCodes, ...rawCodes, ...normalizedCodes, ...rawCodes, ...normalizedCodes, ...rawCodes, ...normalizedCodes, ...rawCodes, ...normalizedCodes, ...rawCodes, ...normalizedCodes, ...rawCodes, ...normalizedCodes]).then(({ rows }) => rows);
 
     const normalize = (c) => String(c ?? "").replace(/[^0-9a-z]/gi, "");
-    const foundSet = new Set((rows || []).flatMap(r => [normalize(r.code), normalize(r.codigoBarras)]));
+    const foundSet = new Set((rows || []).flatMap(r => [normalize(r.code), normalize(r.codigoBarras), normalize(r.codigoBarra1), normalize(r.codigoBarra2), normalize(r.codigoBarra3), normalize(r.codigoBarra4), normalize(r.codigoBarraDun)]));
     const normMissing = normalizedCodes.filter(n => n && !foundSet.has(n) && !rawCodes.includes(n));
     if (normMissing.length > 0) {
       const inNorm = normMissing.map(() => "?").join(",");
       const sqlNorm = `
         ${select}
         FROM products
-        WHERE replace(replace(codigoBarras,'-',''),' ','') IN (${inNorm})
+        WHERE (
+          replace(replace(codigoBarras,'-',''),' ','') IN (${inNorm}) OR
+          replace(replace(codigoBarra1,'-',''),' ','') IN (${inNorm}) OR
+          replace(replace(codigoBarra2,'-',''),' ','') IN (${inNorm}) OR
+          replace(replace(codigoBarra3,'-',''),' ','') IN (${inNorm}) OR
+          replace(replace(codigoBarra4,'-',''),' ','') IN (${inNorm}) OR
+          replace(replace(codigoBarraDun,'-',''),' ','') IN (${inNorm})
+        )
       `;
-      const rowsNorm = await this.repository.databaseLayer.executeSql(sqlNorm, normMissing).then(({ rows }) => rows);
+      const rowsNorm = await this.repository.databaseLayer.executeSql(sqlNorm, [...normMissing, ...normMissing, ...normMissing, ...normMissing, ...normMissing, ...normMissing]).then(({ rows }) => rows);
       rows = [...(rows || []), ...(rowsNorm || [])];
     }
 
     return rows || [];
+  }
+
+  static async ensureBarcodeColumns() {
+    const sqls = [
+      "ALTER TABLE products ADD COLUMN codigoBarra1 TEXT",
+      "ALTER TABLE products ADD COLUMN codigoBarra2 TEXT",
+      "ALTER TABLE products ADD COLUMN codigoBarra3 TEXT",
+      "ALTER TABLE products ADD COLUMN codigoBarra4 TEXT",
+      "ALTER TABLE products ADD COLUMN codigoBarraDun TEXT",
+    ];
+
+    for (const sql of sqls) {
+      try {
+        await this.repository.databaseLayer.executeSql(sql, []);
+      } catch (e) {
+        // ignore if column already exists
+      }
+    }
   }
 }

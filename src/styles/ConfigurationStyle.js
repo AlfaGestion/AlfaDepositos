@@ -5,20 +5,18 @@ import { Fonts, Shadow, Radii } from "@styles/Theme";
 const ConfigStyles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   container: {
     padding: 15,
-    marginTop: 20,
+    paddingTop: 8,
   },
   loader: {
     padding: 30,
   },
   buttonSave: {
-    // width: "100%",
     textAlign: "center",
-    marginTop: 40,
-    marginBottom: 30,
+    marginTop: 12,
+    marginBottom: 20,
     justifyContent: "center",
     alignItems: "center",
     flexDirection: "row",
@@ -36,12 +34,11 @@ const ConfigStyles = StyleSheet.create({
   },
   messageStatus: {
     textAlign: "center",
-    marginVertical: 10,
+    marginVertical: 8,
   },
   buttonRestartTables: {
-    // width: "100%",
     textAlign: "center",
-    marginTop: 20,
+    marginTop: 6,
     justifyContent: "center",
     alignItems: "center",
     flexDirection: "row",
@@ -65,6 +62,59 @@ const ConfigStyles = StyleSheet.create({
     width: 18,
     height: 18,
     tintColor: Colors.WHITE,
+  },
+  themeModeBlock: {
+    marginTop: 14,
+  },
+  themeModeTitle: {
+    fontSize: 16,
+    marginBottom: 8,
+    color: "#1B1B1B",
+    fontFamily: Fonts.display,
+  },
+  themeModeSelector: {
+    flexDirection: "row",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#D0D9E2",
+    backgroundColor: "#F3F7FB",
+    padding: 4,
+  },
+  themeModeSelectorDark: {
+    backgroundColor: "#1F2935",
+    borderColor: "#324255",
+  },
+  themeModeOption: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 9,
+    paddingVertical: 9,
+    gap: 6,
+  },
+  themeModeOptionActiveLight: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E3EDF7",
+  },
+  themeModeOptionActiveDark: {
+    backgroundColor: "#152332",
+    borderWidth: 1,
+    borderColor: "#2D4154",
+  },
+  themeModeText: {
+    fontSize: 14,
+    fontFamily: Fonts.display,
+  },
+  themeModeTextInactive: {
+    color: "#7A8A9A",
+  },
+  themeModeTextActiveLight: {
+    color: "#1A395A",
+  },
+  themeModeTextActiveDark: {
+    color: "#E8F0F8",
   },
 });
 

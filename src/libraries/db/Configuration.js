@@ -52,4 +52,15 @@ export default class Configuration extends BaseModel {
     const sql = `SELECT * from config where key='API_URI' or key='ALFA_ACCOUNT' or key='PASSWORD_SYNC' or key='USERNAME_SYNC' or key='ALFA_DATABASE_ID'`;
     return await this.repository.databaseLayer.executeSql(sql, []).then(({ rows }) => rows);
   }
+
+  static isTruthyConfigValue(value) {
+    const normalized = String(value ?? "").trim().toUpperCase();
+    if (normalized === "") {
+      return false;
+    }
+    if (["0", "NO", "N", "FALSE", "OFF"].includes(normalized)) {
+      return false;
+    }
+    return true;
+  }
 }

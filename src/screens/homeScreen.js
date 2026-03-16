@@ -1,21 +1,23 @@
-import { useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useLayoutEffect, useState } from "react";
 import { Alert, BackHandler, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import SafeAreaView from "react-native-safe-area-view";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { useFocusEffect } from "@react-navigation/native";
 
-import iconClose from "@icons/close.png";
-import iconConfiguration from "@icons/configuration.png";
-import iconAccount from "@icons/account.png";
-import iconMap from "@icons/map.png";
-import iconOrders from "@icons/orders.png";
-import iconOrdersHist from "@icons/orders2.png";
-import iconPayments from "@icons/payment.png";
-import iconProduct from "@icons/product.png";
-import iconSendOrders from "@icons/send-orders.png";
-import iconSync from "@icons/sync.png";
-import iconTasks from "@icons/tasks.png";
+import iconClose from "@icons/salir.png";
+import iconCloseDark from "@icons/salir_b.png";
+import iconConfiguration from "@icons/config.png";
+import iconConfigurationDark from "@icons/config_b.png";
+import iconOrders from "@icons/comprobante.png";
+import iconOrdersDark from "@icons/comprobante_b.png";
+import iconProduct from "@icons/articulos.png";
+import iconProductDark from "@icons/articulos_b.png";
+import iconSendOrders from "@icons/enviarPendiente.png";
+import iconSendOrdersDark from "@icons/enviarPendiente_b.png";
+import iconSync from "@icons/sincronizar.png";
+import iconSyncDark from "@icons/sincronizar_b.png";
 
 import { UserContext } from "@context/UserContext";
+import { useThemeConfig } from "@context/ThemeContext";
 import { getUser } from "@storage/UserAsyncStorage";
 import Colors from "../styles/Colors";
 import BrandMark from "@components/BrandMark";
@@ -24,39 +26,7 @@ import { Fonts, Radii, Shadow } from "@styles/Theme";
 import Configuration from "@db/Configuration";
 import Seller from "@db/Seller";
 
-// import * as TaskManager from "expo-task-manager";
-// import * as Location from "expo-location";
-// import * as BackgroundFetch from "expo-background-fetch";
-
 const PAYMENT_ID = "7";
-
-// const BACKGROUND_LOCATION_TASK = "locationTask";
-// const BACKGROUND_FETCH_TASK = "background-fetch";
-
-// TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
-//   const now = Date.now();
-
-//   console.log(`Got background fetch call at date: ${new Date(now).toISOString()}`);
-
-//   try {
-//     return BackgroundFetch.BackgroundFetchResult.NewData;
-//   } catch (error) {
-//     console.log("ERROR", error);
-//     return BackgroundFetch.Result.Failed;
-//   }
-// });
-
-// async function registerBackgroundFetchAsync() {
-//   return BackgroundFetch.registerTaskAsync(BACKGROUND_FETCH_TASK, {
-//     minimumInterval: 1, // 15 minutes
-//     stopOnTerminate: false, // android only,
-//     startOnBoot: true, // android only
-//   });
-// }
-
-// async function unregisterBackgroundFetchAsync() {
-//   return BackgroundFetch.unregisterTaskAsync(BACKGROUND_FETCH_TASK);
-// }
 
 export default function Home({ navigation }) {
   const DATA = [
@@ -65,101 +35,87 @@ export default function Home({ navigation }) {
       title: "Sincronizar",
       screen: "SyncScreen",
       icon: iconSync,
+      iconDark: iconSyncDark,
     },
-    // {
-    //   id: "2",
-    //   title: "Ruta Diaria",
-    //   screen: "VisitsScreen",
-    //   icon: iconMap,
-    // },
     {
       id: "2",
       title: "Comprobantes",
       screen: "ListOrdersScreen",
       icon: iconOrders,
+      iconDark: iconOrdersDark,
     },
     {
       id: "3",
       title: "Enviar pendientes",
       screen: "SendPendingsScreen",
       icon: iconSendOrders,
+      iconDark: iconSendOrdersDark,
     },
     {
       id: "4",
-      title: "Artículos",
+      title: "Articulos",
       screen: "ProductsScreen",
       icon: iconProduct,
+      iconDark: iconProductDark,
     },
-    // {
-    //   id: "6",
-    //   title: "Proveedores",
-    //   screen: "AccountsScreen",
-    //   icon: iconAccount,
-    // },
-    // {
-    //   id: "7",
-    //   title: "Cobranzas",
-    //   screen: "PaymentsScreen",
-    //   icon: iconPayments,
-    // },
-    // {
-    //   id: "8",
-    //   title: "Historial Pedidos",
-    //   screen: "OrdersRemoteScreen",
-    //   icon: iconOrdersHist,
-    // },
-    // {
-    //   id: "9",
-    //   title: "Tareas",
-    //   screen: "TasksScreen",
-    //   icon: iconTasks,
-    // },
     {
       id: "5",
-      title: "Configuración",
+      title: "Configuracion",
       screen: "ConfigurationScreen",
       icon: iconConfiguration,
+      iconDark: iconConfigurationDark,
     },
     {
       id: "6",
       title: "Salir",
-      action: "true",
+      action: "exit-app",
       icon: iconClose,
+      iconDark: iconCloseDark,
       screen: "",
     },
   ];
 
   const [login, loginAction] = useContext(UserContext);
   const [menuData, setMenuData] = useState([]);
+  const { darkMode } = useThemeConfig();
+
+  const getAccentColor = (id) => {
+    const map = {
+      "1": "#1E88E5",
+      "2": "#1565C0",
+      "3": "#00897B",
+      "4": "#EF6C00",
+      "5": "#455A64",
+      "6": "#D32F2F",
+    };
+    return map[id] || "#1E88E5";
+  };
 
   useEffect(() => {
     ensureAutoLogin();
-    loadSellerConfig();
-    // checkStatusAsync();
   }, [navigation]);
 
-  // const checkStatusAsync = async () => {
-  //   const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_FETCH_TASK);
+  useFocusEffect(
+    useCallback(() => {
+      loadSellerConfig();
+    }, [])
+  );
 
-  //   if (!isRegistered) {
-  //     console.log("SE REGISTRO");
-  //     await registerBackgroundFetchAsync();
-  //   } else {
-  //     // console.log("SE DESREGISTRO");
-  //     // await unregisterBackgroundFetchAsync();
-  //   }
-  // };
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerStyle: { backgroundColor: darkMode ? "#16212D" : "#DDEAF8" },
+      headerTintColor: darkMode ? "#E8F0F8" : "#1A395A",
+      headerTitleStyle: { color: darkMode ? "#E8F0F8" : "#1A395A", fontWeight: "700" },
+    });
+  }, [navigation, darkMode]);
 
   const loadSellerConfig = async () => {
     try {
-      const data = await Configuration.getConfig("PERMITE_COBRANZAS");
+      const paymentsConfig = await Configuration.getConfig("PERMITE_COBRANZAS");
+
       let newData;
-      if (data.length > 0) {
-        if (data[0].value == 0) {
-          newData = DATA.filter((item) => item.id !== PAYMENT_ID);
-        } else {
-          newData = DATA;
-        }
+      if (paymentsConfig.length > 0 && paymentsConfig[0].value == 0) {
+        newData = DATA.filter((item) => item.id !== PAYMENT_ID);
       } else {
         newData = DATA;
       }
@@ -193,18 +149,11 @@ export default function Home({ navigation }) {
         };
       }
     } catch (e) {
-      // Ignore and fall back to defaults
+      // Fallback a valores por defecto
     }
 
     loginAction({ type: "sign", data: autoUser });
     await Configuration.setConfigValue("TOKEN", "");
-  };
-
-  const logOut = async () => {
-    const response = await getUser();
-
-    loginAction({ type: "sign-out", data: response });
-    navigation.navigate("HomeScreen");
   };
 
   const exitApp = async () => {
@@ -213,53 +162,76 @@ export default function Home({ navigation }) {
     BackHandler.exitApp();
   };
 
-  const Item = (props) => (
-    <View style={styles.item}>
-      <TouchableOpacity
-        style={styles.TouchableItem}
-        onPress={() => {
-          if (props.action) {
-            Alert.alert(
-              "Salir",
-              "¿Desea salir de la aplicación?",
-              [
-                { text: "Cancelar", style: "cancel" },
-                { text: "Salir", onPress: () => exitApp() },
-              ]
-            );
-            return;
-          }
-          navigation.navigate(props.screen);
-        }}
+  const Item = (props) => {
+    const accent = getAccentColor(props.id);
+
+    return (
+      <View
+        style={[
+          styles.item,
+          !darkMode && { borderLeftWidth: 4, borderLeftColor: accent },
+          darkMode && styles.itemDark,
+          darkMode && { borderLeftWidth: 3, borderLeftColor: `${accent}99` },
+        ]}
       >
-        <View style={styles.iconBadge}>
-          <Image source={props.icon} style={styles.imageNoTint} />
-        </View>
-        <Text style={styles.title}>{props.title}</Text>
-      </TouchableOpacity>
-    </View>
-  );
+        <TouchableOpacity
+          style={styles.touchableItem}
+          onPress={() => {
+            if (props.action === "exit-app") {
+              Alert.alert("Salir", "Desea salir de la aplicacion?", [
+                { text: "Cancelar", style: "cancel" },
+                { text: "Salir", onPress: exitApp },
+              ]);
+              return;
+            }
+            navigation.navigate(props.screen);
+          }}
+        >
+          <View
+            style={[
+              styles.iconBadge,
+              darkMode ? styles.iconBadgeDark : styles.iconBadgeLight,
+              !darkMode && { backgroundColor: `${accent}1A` },
+              darkMode && { backgroundColor: `${accent}2D` },
+            ]}
+          >
+            <Image source={darkMode ? props.iconDark : props.icon} style={styles.image} />
+          </View>
+          <Text style={[styles.title, darkMode ? styles.titleDark : styles.titleLight]}>{props.title}</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   const renderItem = ({ item }) => (
-    <Item title={item.title} screen={item.screen} icon={item.icon} action={item.action} />
+    <Item
+      id={item.id}
+      title={item.title}
+      screen={item.screen}
+      icon={item.icon}
+      iconDark={item.iconDark}
+      action={item.action}
+    />
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, darkMode && styles.containerDark]}>
       <FlatList
         data={menuData}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
           <View style={styles.header}>
-            <BrandMark label="Alfa Depósitos" size={72} />
-            <Text style={styles.subtitle}>Gestión ágil de depósitos y recepciones</Text>
+            <BrandMark label="Alfa Depositos" size={72} darkMode={darkMode} />
+            <Text style={[styles.subtitle, darkMode && styles.subtitleDark]}>
+              Gestion agil de depositos y recepciones
+            </Text>
           </View>
         }
       />
-      <View style={styles.footer}>
-        <Text style={styles.compilationName}>Nro comp.: 1.0.0</Text>
-        <Text style={styles.mainLabelName}>
+      <View style={[styles.footer, darkMode && styles.footerDark]}>
+        <Text style={[styles.compilationName, darkMode && styles.footerTextDark]}>Nro comp.: 1.0.0</Text>
+        <Text style={[styles.mainLabelName, darkMode && styles.footerTextDark]}>
           VENDEDOR: {login?.user?.user ?? ""} - {login?.user?.name ?? ""}
         </Text>
       </View>
@@ -267,23 +239,13 @@ export default function Home({ navigation }) {
   );
 }
 
-// TaskManager.defineTask(BACKGROUND_LOCATION_TASK, ({ data, error }) => {
-//   console.log("PASO POR AQUI");
-//   if (error) {
-//     // Error occurred - check `error.message` for more details.
-//     return;
-//   }
-//   if (data) {
-//     const { locations } = data;
-//     console.log("locations", locations);
-//     // do something with the locations captured in the background
-//   }
-// });
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#E7F1F9",
+    backgroundColor: "#E8F2FC",
+  },
+  containerDark: {
+    backgroundColor: "#0F1720",
   },
   header: {
     paddingHorizontal: 20,
@@ -297,6 +259,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: "center",
   },
+  subtitleDark: {
+    color: "#BFD0E0",
+  },
   item: {
     backgroundColor: Colors.SURFACE,
     padding: 14,
@@ -307,8 +272,12 @@ const styles = StyleSheet.create({
     borderColor: Colors.BORDER,
     ...Shadow.sm,
   },
-  TouchableItem: {
-    display: "flex",
+  itemDark: {
+    backgroundColor: "#1B2633",
+    borderColor: "#243241",
+    shadowOpacity: 0.22,
+  },
+  touchableItem: {
     justifyContent: "flex-start",
     alignItems: "center",
     flexDirection: "row",
@@ -317,22 +286,32 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginLeft: 14,
     fontFamily: Fonts.display,
-    color: Colors.DGREY,
   },
-  imageNoTint: {
-    width: 28,
-    height: 28,
+  titleLight: {
+    color: "#1E2A36",
+  },
+  titleDark: {
+    color: "#E8F0F8",
+  },
+  image: {
+    width: 24,
+    height: 24,
   },
   iconBadge: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: 22,
     marginLeft: 6,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F0F5FA",
+  },
+  iconBadgeLight: {
     borderWidth: 1,
     borderColor: Colors.BORDER,
+  },
+  iconBadgeDark: {
+    borderWidth: 1,
+    borderColor: "#2D4154",
   },
   mainLabelName: {
     color: Colors.DGREY,
@@ -356,5 +335,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.SURFACE,
     borderTopWidth: 1,
     borderTopColor: Colors.BORDER,
+  },
+  footerDark: {
+    backgroundColor: "#16212D",
+    borderTopColor: "#2A3949",
+  },
+  footerTextDark: {
+    color: "#E8F0F8",
+    backgroundColor: "transparent",
   },
 });
