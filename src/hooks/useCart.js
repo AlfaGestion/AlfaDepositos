@@ -450,6 +450,7 @@ export const CartProvider = ({ children }) => {
         setCartItems((prevItems) => {
             const existingProduct = prevItems.find(item => item.id === product.id);
             const addedAt = Date.now();
+            const normalizedQty = parseFloat(quantity) || 1;
 
             let actualPrice = 0;
 
@@ -480,7 +481,7 @@ export const CartProvider = ({ children }) => {
                             bultos: bultos > 0 ? bultos : parseInt(item.bultos),
                             disc: disc == 0 ? product.disc : 0,
                             priceWithDiscount: priceWithDiscount,
-                            quantity: sumProductToExisting ? (quantity > 1 ? quantity : parseInt(item.quantity) + 1) : (parseInt(item?.quantity) + parseInt(quantity)),
+                            quantity: sumProductToExisting ? (normalizedQty > 1 ? normalizedQty : parseFloat(item.quantity) + 1) : (parseFloat(item?.quantity) + normalizedQty),
                             _addedAt: addedAt
                         }  // Aumentamos la cantidad
                         : item
@@ -488,7 +489,7 @@ export const CartProvider = ({ children }) => {
             } else {
                 // console.log(product)
                 // Si no estÃ¡ en el carrito, lo agregamos con una cantidad de 1
-                return [...prevItems, { ...product, bultos: bultos, priceWithDiscount: priceWithDiscount, quantity: parseInt(quantity), disc: disc, alicIva: (parseInt(product?.iva) == 0 || product?.iva == null) ? 21 : product?.iva, _addedAt: addedAt }];
+                return [...prevItems, { ...product, bultos: bultos, priceWithDiscount: priceWithDiscount, quantity: normalizedQty, disc: disc, alicIva: (parseInt(product?.iva) == 0 || product?.iva == null) ? 21 : product?.iva, _addedAt: addedAt }];
             }
         });
     };
@@ -502,10 +503,11 @@ export const CartProvider = ({ children }) => {
 
             for (const entry of items) {
                 const product = entry.product;
-                const qty = parseInt(entry.qty, 10) || 1;
+                const qty = parseFloat(entry.qty) || 1;
                 const disc = entry.disc || 0;
                 const bultos = entry.bultos || 0;
                 const newPrice = entry.newPrice || 0;
+                const separateLine = entry.separateLine === true;
 
                 let actualPrice = 0;
                 if (newPrice > 0) {
@@ -520,7 +522,7 @@ export const CartProvider = ({ children }) => {
                     priceWithDiscount = actualPrice - ((actualPrice * disc) / 100);
                 }
 
-                if (indexById.has(product.id)) {
+                if (!separateLine && indexById.has(product.id)) {
                     const idx = indexById.get(product.id);
                     const item = next[idx];
                     const itemPriceWithDiscount = disc > 0 ? priceWithDiscount : item.priceWithDiscount;
@@ -529,12 +531,13 @@ export const CartProvider = ({ children }) => {
                         bultos: bultos > 0 ? bultos : parseInt(item.bultos),
                         disc: disc == 0 ? item.disc : 0,
                         priceWithDiscount: itemPriceWithDiscount,
-                        quantity: parseInt(item.quantity) + qty,
+                        quantity: parseFloat(item.quantity) + qty,
                         _addedAt: Date.now()
                     };
                 } else {
                     next.push({
                         ...product,
+                        _lineId: `${product.id}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
                         bultos,
                         priceWithDiscount,
                         quantity: qty,
@@ -550,8 +553,10 @@ export const CartProvider = ({ children }) => {
     };
 
     // Eliminar un producto del carrito
-    const removeFromCart = (productCode) => {
-        setCartItems((prevItems) => prevItems.filter(item => item.code !== productCode));
+    const removeFromCart = (productOrCode) => {
+        const lineId = productOrCode?._lineId;
+        const productCode = typeof productOrCode === "object" ? productOrCode?.code : productOrCode;
+        setCartItems((prevItems) => prevItems.filter(item => lineId ? item._lineId !== lineId : item.code !== productCode));
     };
 
     const getItem = (productCode) => {
@@ -575,15 +580,16 @@ export const CartProvider = ({ children }) => {
     }
 
     // Eliminar una unidad de un producto del carrito
-    const decreaseQuantity = (productCode) => {
+    const decreaseQuantity = (productOrCode) => {
+        const lineId = productOrCode?._lineId;
+        const productCode = typeof productOrCode === "object" ? productOrCode?.code : productOrCode;
         setCartItems((prevItems) => {
-            const product = prevItems.find(item => item.code === productCode);
-            if (product && product.quantity == 1) {
-                removeFromCart(productCode)
-                return prevItems
+            const product = prevItems.find(item => lineId ? item._lineId === lineId : item.code === productCode);
+            if (product && parseFloat(product.quantity) <= 1) {
+                return prevItems.filter(item => lineId ? item._lineId !== lineId : item.code !== productCode);
             } else if (product && product.quantity > 0) {
                 return prevItems.map(item =>
-                    item.code === productCode
+                    (lineId ? item._lineId === lineId : item.code === productCode)
                         ? { ...item, quantity: item.quantity - 1 }
                         : item
                 );

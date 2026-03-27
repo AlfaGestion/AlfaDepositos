@@ -18,6 +18,13 @@ export default function ItemResumeCart({ item, darkMode = false }) {
         setPriceClassSelected(priceToShow)
     }, [globalPriceClass])
 
+    const formatQuantity = (value) => {
+        const numeric = parseFloat(value);
+        if (!Number.isFinite(numeric)) return "0";
+        if (Number.isInteger(numeric)) return String(numeric);
+        return numeric.toFixed(3);
+    };
+
     // console.log(item)
 
     return (
@@ -37,24 +44,24 @@ export default function ItemResumeCart({ item, darkMode = false }) {
                     {parseInt(item?.disc) > 0 && <Text style={{ fontSize: getFontSize(12), color: darkMode ? "#BFD0E0" : "#1B1B1B" }}>DESCUENTO : {item?.disc}%</Text>}
                     <Text style={{ fontSize: getFontSize(14), color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>{item?.name}</Text>
                     {item?.disc > 0 ?
-                        <Text style={{ fontSize: getFontSize(16), fontWeight: "600", color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>{currencyFormat(item?.quantity * item?.priceWithDiscount)} ({item?.quantity} x {currencyFormat(item?.priceWithDiscount)}) <Text style={{ textDecorationLine: "line-through", color: darkMode ? "#9CB2C8" : "#1B1B1B" }}>{currencyFormat(item?.[priceClassSelected])}</Text></Text>
+                        <Text style={{ fontSize: getFontSize(16), fontWeight: "600", color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>{currencyFormat(item?.quantity * item?.priceWithDiscount)} ({formatQuantity(item?.quantity)} x {currencyFormat(item?.priceWithDiscount)}) <Text style={{ textDecorationLine: "line-through", color: darkMode ? "#9CB2C8" : "#1B1B1B" }}>{currencyFormat(item?.[priceClassSelected])}</Text></Text>
                         :
-                        <Text style={{ fontSize: getFontSize(16), fontWeight: "600", color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>{currencyFormat(item?.quantity * item?.[priceClassSelected])} ({item?.quantity} x {currencyFormat(item?.[priceClassSelected])}) </Text>
+                        <Text style={{ fontSize: getFontSize(16), fontWeight: "600", color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>{currencyFormat(item?.quantity * item?.[priceClassSelected])} ({formatQuantity(item?.quantity)} x {currencyFormat(item?.[priceClassSelected])}) </Text>
                     }
                     {item?.bultos > 0 && <Text style={{ fontSize: getFontSize(14), color: darkMode ? "#BFD0E0" : "#1B1B1B" }}>{item?.bultos} Bultos</Text>}
 
                     <View style={{ flexDirection: "row", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <TouchableOpacity onPress={() => removeFromCart(item.code)} style={{ backgroundColor: "red", paddingHorizontal: 10, paddingVertical: 2, borderRadius: 5 }}>
+                        <TouchableOpacity onPress={() => removeFromCart(item)} style={{ backgroundColor: "red", paddingHorizontal: 10, paddingVertical: 2, borderRadius: 5 }}>
                             <Text style={{ fontSize: getFontSize(14), color: "white" }}>Eliminar</Text>
                         </TouchableOpacity>
 
                         {!noPermiteDuplicarItem ?
                             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", }}>
-                                <TouchableOpacity onPress={() => decreaseQuantity(item.code)} style={{ borderWidth: 1, borderColor: darkMode ? "#2D4154" : "gray", borderRadius: 20 }}>
+                                <TouchableOpacity onPress={() => decreaseQuantity(item)} style={{ borderWidth: 1, borderColor: darkMode ? "#2D4154" : "gray", borderRadius: 20 }}>
                                     <Text style={{ paddingHorizontal: 15, fontWeight: "500", paddingVertical: 5, fontSize: getFontSize(20), color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>-</Text>
                                 </TouchableOpacity>
 
-                                <Text style={{ fontSize: getFontSize(18), fontWeight: "bold", paddingHorizontal: 10, textAlign: "center", minWidth: 60, color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>{getCurrentQuantity(item.code)}</Text>
+                                <Text style={{ fontSize: getFontSize(18), fontWeight: "bold", paddingHorizontal: 10, textAlign: "center", minWidth: 60, color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>{formatQuantity(item?.quantity)}</Text>
 
                                 <TouchableOpacity onPress={() => {
                                     addToCart(item)

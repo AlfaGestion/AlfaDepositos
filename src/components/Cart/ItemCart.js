@@ -8,7 +8,7 @@ import ProductImage from '../ProductImage';
 
 export default function ItemCart({ item, priceClass, showImage = true, compact = false, darkMode = false }) {
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const { addToCart, noPermiteDuplicarItem, decreaseQuantity, loadImages, getCurrentQuantity, removeFromCart, setGlobalPriceClass } = useCart();
+    const { addToCart, noPermiteDuplicarItem, decreaseQuantity, loadImages, removeFromCart, setGlobalPriceClass } = useCart();
 
     // Al montar el componente o si cambia priceClass, lo seteamos globalmente
     useEffect(() => {
@@ -17,7 +17,13 @@ export default function ItemCart({ item, priceClass, showImage = true, compact =
 
     const priceKey = `price${priceClass}`;
     const priceToShow = item[priceKey] ?? 0;
-    const quantity = getCurrentQuantity(item.code);
+    const quantity = item?.quantity ?? 0;
+    const formatQuantity = (value) => {
+        const numeric = parseFloat(value);
+        if (!Number.isFinite(numeric)) return "0";
+        if (Number.isInteger(numeric)) return String(numeric);
+        return numeric.toFixed(3);
+    };
 
     const imageSize = compact ? 46 : 80;
     const rightPadding = compact ? 6 : 0;
@@ -47,18 +53,18 @@ export default function ItemCart({ item, priceClass, showImage = true, compact =
 
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: quantity > 0 ? "space-between" : "flex-end" }}>
                     {quantity > 0 && (
-                        <TouchableOpacity onPress={() => removeFromCart(item.code)} style={{ backgroundColor: "red", paddingHorizontal: compact ? 8 : 10, paddingVertical: 2, borderRadius: 5 }}>
+                        <TouchableOpacity onPress={() => removeFromCart(item)} style={{ backgroundColor: "red", paddingHorizontal: compact ? 8 : 10, paddingVertical: 2, borderRadius: 5 }}>
                             <Text style={{ fontSize: getFontSize(actionFont), color: "white" }}>Eliminar</Text>
                         </TouchableOpacity>
                     )}
 
                     {!noPermiteDuplicarItem ?
                         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", marginRight: 10, paddingVertical: 5 }}>
-                            <TouchableOpacity onPress={() => decreaseQuantity(item.code)} style={{ borderWidth: 1, borderColor: darkMode ? "#2D4154" : "gray", borderRadius: 20 }}>
+                            <TouchableOpacity onPress={() => decreaseQuantity(item)} style={{ borderWidth: 1, borderColor: darkMode ? "#2D4154" : "gray", borderRadius: 20 }}>
                                 <Text style={{ paddingHorizontal: btnPadding, fontWeight: "bold", paddingVertical: 5, fontSize: getFontSize(qtyFont), color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>-</Text>
                             </TouchableOpacity>
 
-                            <Text style={{ fontSize: getFontSize(qtyFont), textAlign: "center", fontWeight: "bold", paddingHorizontal: 10, minWidth: compact ? 48 : 70, color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>{quantity}</Text>
+                            <Text style={{ fontSize: getFontSize(qtyFont), textAlign: "center", fontWeight: "bold", paddingHorizontal: 10, minWidth: compact ? 48 : 70, color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>{formatQuantity(quantity)}</Text>
 
                             <TouchableOpacity onPress={() => addToCart(item, 1, 0, priceClass)} style={{ borderWidth: 1, borderColor: darkMode ? "#2D4154" : "gray", borderRadius: 20 }}>
                                 <Text style={{ paddingHorizontal: btnPadding, paddingVertical: 5, fontWeight: "bold", fontSize: getFontSize(qtyFont), color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>+</Text>

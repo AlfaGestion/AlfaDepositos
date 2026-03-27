@@ -6,6 +6,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 // ... tus otros imports
 import Product from "@db/Product";
 import ProductLista from "@db/ProductLista";
+import Configuration from "@db/Configuration";
 import { useCart } from "../hooks/useCart";
 import Colors from "../styles/Colors";
 import { getFontSize } from "../utils/Metrics";
@@ -34,6 +35,9 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
     const [scanModalVisible, setScanModalVisible] = useState(false);
     const [scannedCode, setScannedCode] = useState("");
     const [scannedQty, setScannedQty] = useState("1");
+    const [scannedLookupCode, setScannedLookupCode] = useState("");
+    const [CfgCodPesable, setCfgCodPesable] = useState("");
+    const [cfgDecimalesEan, setCfgDecimalesEan] = useState(0);
     const loadingRef = useRef(false);
     const lastSearchTriggerRef = useRef(0);
     const lastScanTriggerRef = useRef(0);
@@ -77,6 +81,14 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                     await withTimeout(ProductLista.createTable(), "createTable(products_listas)", 4000);
                 }
                 await withTimeout(Product.ensureIndexes(), "ensureIndexes", 4000);
+                const codPesableCfg = await withTimeout(Configuration.getConfigValue("CfgCodPesable"), "getConfigValue(CfgCodPesable)", 4000);
+                const codPesableLegacy = await withTimeout(Configuration.getConfigValue("CodPesable"), "getConfigValue(CodPesable)", 4000);
+                const decimalesCfg = await withTimeout(Configuration.getConfigValue("cfgDecimalesEan"), "getConfigValue(cfgDecimalesEan)", 4000);
+                const decimalesLegacy = await withTimeout(Configuration.getConfigValue("DecimalesEan"), "getConfigValue(DecimalesEan)", 4000);
+                const codPesable = codPesableCfg || codPesableLegacy;
+                const decimalesEan = decimalesCfg || decimalesLegacy;
+                setCfgCodPesable(String(codPesable ?? "").trim().toUpperCase());
+                setCfgDecimalesEan(Math.max(0, parseInt(decimalesEan, 10) || 0));
             } catch (e) {
                 // seguimos igual para no bloquear la UI
             }
@@ -85,6 +97,138 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
         };
         init();
     }, [effectivePriceClass, lista]);
+
+    const getWeightedQuantityFromScan = (mode, decimals, rawValue, product) => {
+        const value = parseInt(String(rawValue ?? ""), 10);
+        if (!Number.isFinite(value)) return null;
+        const divisor = Math.pow(10, Math.max(0, decimals || 0));
+        const parsedValue = divisor > 0 ? value / divisor : value;
+
+        if (mode === "P" || mode === "Q") {
+            return parsedValue;
+        }
+
+        if (mode === "T") {
+            const unitPrice = parseFloat(product?.[`price${effectivePriceClass}`] ?? 0);
+            if (!unitPrice) return null;
+            return parsedValue / unitPrice;
+        }
+
+        return null;
+    };
+
+    const parseWeightedCodeByMask = (rawCode) => {
+        let code = String(rawCode ?? "").trim();
+        const mask = String(CfgCodPesable ?? "").trim().toUpperCase();
+        if (mask && code.length === mask.length && mask.startsWith("0")) {
+            code = `0${code}`;
+            console.log("[EAN] normalizado UPC/EAN", { rawCode, normalizedCode: code, mask });
+        } else if (mask && code.length === mask.length - 1 && mask.startsWith("0") && !code.startsWith("0")) {
+            code = `0${code}`;
+            console.log("[EAN] normalizado con cero inicial", { rawCode, normalizedCode: code, mask });
+        }
+        if (!code || !mask || code.length < mask.length) {
+            console.log("[EAN] invalido", { code, mask });
+            return null;
+        }
+
+        const maskedCode = code.slice(0, mask.length);
+
+        let lookupCode = "";
+        let valueDigits = "";
+        let valueMode = "";
+
+        for (let i = 0; i < mask.length; i++) {
+            const maskChar = mask[i];
+            const codeChar = maskedCode[i];
+
+            if (["C", "P", "Q", "T"].includes(maskChar)) {
+                if (maskChar === "C") {
+                    lookupCode += codeChar;
+                } else {
+                    valueDigits += codeChar;
+                    if (!valueMode) {
+                        valueMode = maskChar;
+                    }
+                }
+                continue;
+            }
+
+            if (maskChar !== codeChar) {
+                console.log("[EAN] no coincide mascara", { code, mask, pos: i, esperado: maskChar, recibido: codeChar });
+                return null;
+            }
+        }
+
+        if (!lookupCode) {
+            console.log("[EAN] sin codigo articulo", { code, mask });
+            return null;
+        }
+
+        if (mask === "0CCCCCPPPPPP") {
+            const specialParsed = {
+                lookupCode: maskedCode.slice(1, 6),
+                valueDigits: maskedCode.slice(6, 12),
+                valueMode: "P",
+                forceDivisor: 1000,
+            };
+            console.log("[EAN] parse especial", { code, mask, ...specialParsed });
+            return specialParsed;
+        }
+
+        const parsed = {
+            lookupCode,
+            valueDigits,
+            valueMode,
+        };
+        console.log("[EAN] parse", { code, mask, lookupCode, valueDigits, valueMode });
+        return parsed;
+    };
+
+    const resolveScannedProduct = async (code, useFallback = true) => {
+        let product = await findProductByCode(code, useFallback);
+        if (product && product.length > 0) {
+            console.log("[EAN] match directo", { scanned: code, found: product[0]?.code });
+            return { products: product, qtyOverride: null, lookupCode: code };
+        }
+
+        const rawCode = String(code ?? "").trim();
+        const parsed = parseWeightedCodeByMask(rawCode);
+        if (!parsed) {
+            console.log("[EAN] no parseado como pesable", { scanned: rawCode, cfg: CfgCodPesable, decimales: cfgDecimalesEan });
+            return { products: [], qtyOverride: null, lookupCode: code };
+        }
+
+        let candidates = await withTimeout(Product.findByCode(parsed.lookupCode, lista), "findByCode(mask)", 12000);
+        if ((!candidates || candidates.length === 0) && lista) {
+            candidates = await withTimeout(Product.findByCode(parsed.lookupCode, ""), "findByCode(mask)", 12000);
+        }
+        if (!candidates || candidates.length === 0) {
+            console.log("[EAN] articulo no encontrado", { scanned: rawCode, lookupCode: parsed.lookupCode, lista });
+            return { products: [], qtyOverride: null, lookupCode: code };
+        }
+
+        const selected = candidates[0];
+        const qtyOverride = parsed.forceDivisor
+            ? (parseInt(String(parsed.valueDigits ?? ""), 10) || 0) / parsed.forceDivisor
+            : getWeightedQuantityFromScan(parsed.valueMode, cfgDecimalesEan, parsed.valueDigits, selected);
+        console.log("[EAN] resuelto", {
+            scanned: rawCode,
+            lookupCode: parsed.lookupCode,
+            mode: parsed.valueMode,
+            valueDigits: parsed.valueDigits,
+            decimales: cfgDecimalesEan,
+            forceDivisor: parsed.forceDivisor || null,
+            qtyOverride,
+            product: selected?.code,
+        });
+
+        return {
+            products: [selected],
+            qtyOverride: qtyOverride && qtyOverride > 0 ? qtyOverride : null,
+            lookupCode: parsed.lookupCode,
+        };
+    };
 
     // 2. Función unificada de búsqueda por código (para Enter y para Escáner)
     const findProductByCode = async (code, useFallback = true) => {
@@ -150,7 +294,8 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                 setIsModalVisible(true);
                 return;
             }
-            const product = await findProductByCode(code, useFallback);
+            const resolved = await resolveScannedProduct(code, useFallback);
+            const product = resolved.products;
             if (product && product.length > 0) {
                 const selected = product[0];
                 const validate = await passValidations(selected);
@@ -161,10 +306,11 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                     return;
                 }
 
-                if (autoAddOnManualSearch && effectiveQty) {
-                    addManyToCart([{ product: selected, qty: effectiveQty }]);
+                const finalQty = resolved.qtyOverride ?? effectiveQty;
+                if (autoAddOnManualSearch && finalQty) {
+                    addManyToCart([{ product: selected, qty: finalQty }]);
                     if (typeof onAutoAdd === "function") {
-                        onAutoAdd(selected, effectiveQty);
+                        onAutoAdd(selected, finalQty);
                     }
                     promoteProduct(selected);
                     resetSearch(false);
@@ -247,18 +393,19 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
         setScannerVisible(false);
 
         if (autoAddOnScan) {
-            const qty = Number.isFinite(parseInt(scanQuantity, 10)) && parseInt(scanQuantity, 10) > 0
-                ? parseInt(scanQuantity, 10)
-                : 1;
             try {
-                const product = await findProductByCode(code, true);
+                const resolved = await resolveScannedProduct(code, true);
+                const product = resolved.products;
+                const qty = resolved.qtyOverride ?? (Number.isFinite(parseFloat(scanQuantity)) && parseFloat(scanQuantity) > 0
+                    ? parseFloat(scanQuantity)
+                    : 1);
                 if (product && product.length > 0) {
                     const validate = await passValidations(product[0]);
                     if (!validate) {
                         Alert.alert('Alerta', 'Este artículo ya fue cargado en este o en otro comprobante.');
                         return;
                     }
-                    addManyToCart([{ product: product[0], qty }]);
+                    addManyToCart([{ product: product[0], qty, separateLine: true }]);
                     if (typeof onAutoAdd === "function") {
                         onAutoAdd(product[0], qty);
                     }
@@ -273,7 +420,9 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
         }
 
         setScannedCode(code);
-        setScannedQty("1");
+        const resolved = await resolveScannedProduct(code, true);
+        setScannedQty(String(resolved.qtyOverride ?? 1));
+        setScannedLookupCode(String(resolved.lookupCode ?? code));
         setScanModalVisible(true);
     };
 
@@ -283,7 +432,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
             Alert.alert("Error", "Código inválido.");
             return;
         }
-        const qty = parseInt(scannedQty, 10);
+        const qty = parseFloat(String(scannedQty ?? "").replace(",", "."));
         const normalizedQty = Number.isFinite(qty) && qty > 0 ? qty : 0;
         if (!normalizedQty) {
             Alert.alert("Error", "Ingrese una cantidad válida.");
@@ -294,9 +443,10 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
             if (existing) {
                 return prev.map((p) => p.code === code ? { ...p, qty: p.qty + normalizedQty } : p);
             }
-            return [{ code, qty: normalizedQty }, ...prev];
+            return [{ code, lookupCode: scannedLookupCode || code, qty: normalizedQty, separateLine: true }, ...prev];
         });
         setScanModalVisible(false);
+        setScannedLookupCode("");
     };
 
     const validatePendingScans = async () => {
@@ -308,7 +458,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
         try {
             const t0 = Date.now();
             console.log("[SCAN][process] start", pendingScans.length);
-            const codes = pendingScans.map(p => p.code);
+            const codes = pendingScans.map(p => p.lookupCode || p.code);
             const t1 = Date.now();
             let rows = await withTimeout(Product.findByCodes(codes, lista), "findByCodes", 8000);
             if ((!rows || rows.length === 0) && lista) {
@@ -342,13 +492,13 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
             let cartSet = new Set((cartItems || []).map(i => String(i.code)));
             let toAdd = [];
             for (const scan of pendingScans) {
-                const key = normalize(scan.code);
+                const key = normalize(scan.lookupCode || scan.code);
                 const product = map.get(key);
                 if (product) {
                     if (noPermiteDuplicarItem && cartSet.has(String(product.code))) {
                         duplicated.push(scan.code);
                     } else {
-                        toAdd.push({ product, qty: scan.qty });
+                        toAdd.push({ product, qty: scan.qty, separateLine: scan.separateLine === true });
                     }
                 } else {
                     missing.push(scan.code);
@@ -368,9 +518,9 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                 const remaining = [];
                 for (const scan of pendingScans) {
                     try {
-                        let one = await withTimeout(Product.findByCode(scan.code, lista), "findByCode", 5000);
+                        let one = await withTimeout(Product.findByCode(scan.lookupCode || scan.code, lista), "findByCode", 5000);
                         if ((!one || one.length === 0) && lista) {
-                            one = await withTimeout(Product.findByCode(scan.code, ""), "findByCode", 5000);
+                            one = await withTimeout(Product.findByCode(scan.lookupCode || scan.code, ""), "findByCode", 5000);
                         }
                         const product = one && one.length > 0 ? one[0] : null;
                         if (!product) {
@@ -382,7 +532,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                             duplicated.push(scan.code);
                             continue;
                         }
-                        addManyToCart([{ product, qty: scan.qty }]);
+                        addManyToCart([{ product, qty: scan.qty, separateLine: scan.separateLine === true }]);
                         cartSet.add(String(product.code));
                     } catch (e) {
                         remaining.push(scan);
@@ -580,7 +730,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                     <CameraView
                         onBarcodeScanned={scannerVisible ? handleBarCodeScanned : undefined}
                         barcodeScannerSettings={{
-                            barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "code128", "code39", "code93", "qr"],
+                            barcodeTypes: ["ean13", "ean8", "code128", "code39", "code93", "qr"],
                         }}
                         style={StyleSheet.absoluteFillObject}
                     />

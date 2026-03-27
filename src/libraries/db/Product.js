@@ -255,6 +255,39 @@ export default class Product extends BaseModel {
     return rows || [];
   }
 
+  static async findByBarcodePrefix(scannedCode, lista = '') {
+    const rawCode = String(scannedCode ?? "").trim();
+    const normalizedCode = rawCode.replace(/\s+/g, "").replace(/[^0-9a-z]/gi, "");
+    if (!normalizedCode) return [];
+
+    const select = `SELECT cant_propuesta, code, codigoBarras, codigoBarra1, codigoBarra2, codigoBarra3, codigoBarra4, codigoBarraDun, name, id, price1, price2, price3, price4, price5, price6, price7, price8, price9, price10`;
+    const prefixWhere = `(
+      ? LIKE replace(trim(code), ' ', '') || '%' OR
+      ? LIKE replace(trim(codigoBarras), ' ', '') || '%' OR
+      ? LIKE replace(trim(codigoBarra1), ' ', '') || '%' OR
+      ? LIKE replace(trim(codigoBarra2), ' ', '') || '%' OR
+      ? LIKE replace(trim(codigoBarra3), ' ', '') || '%' OR
+      ? LIKE replace(trim(codigoBarra4), ' ', '') || '%' OR
+      ? LIKE replace(trim(codigoBarraDun), ' ', '') || '%'
+    )`;
+
+    if (lista != '' && lista != null && lista != undefined) {
+      const sqlListas = `
+        ${select}
+        FROM products_listas
+        WHERE lista=? AND ${prefixWhere}
+      `;
+      return await this.repository.databaseLayer.executeSql(sqlListas, [String(lista), normalizedCode, normalizedCode, normalizedCode, normalizedCode, normalizedCode, normalizedCode, normalizedCode]).then(({ rows }) => rows);
+    }
+
+    const sql = `
+      ${select}
+      FROM products
+      WHERE ${prefixWhere}
+    `;
+    return await this.repository.databaseLayer.executeSql(sql, [normalizedCode, normalizedCode, normalizedCode, normalizedCode, normalizedCode, normalizedCode, normalizedCode]).then(({ rows }) => rows);
+  }
+
   static async ensureBarcodeColumns() {
     const sqls = [
       "ALTER TABLE products ADD COLUMN codigoBarra1 TEXT",

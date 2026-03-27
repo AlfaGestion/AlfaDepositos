@@ -17,6 +17,14 @@
         "env": { "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64" }
       }
     },
+    "apk": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "env": { "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64" }
+      }
+    },
     "production": {
       "android": {
         "env": { "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64" }

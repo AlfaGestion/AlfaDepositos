@@ -32,6 +32,13 @@ export default function CartScreen({ jumpTo, isActive = false, darkMode = false 
         codeInputRef.current?.focus?.();
     };
 
+    const formatQuantity = (value) => {
+        const numeric = parseFloat(value);
+        if (!Number.isFinite(numeric)) return "0";
+        if (Number.isInteger(numeric)) return String(numeric);
+        return numeric.toFixed(3);
+    };
+
     const focusPrimaryInput = () => {
         if (isInventory) {
             focusCodeInput();
@@ -208,7 +215,7 @@ export default function CartScreen({ jumpTo, isActive = false, darkMode = false 
                             {lastAddedItem?.name || lastAddedItem?.description || lastAddedItem?.descripcion || ""}
                         </Text>
                         <Text style={{ fontSize: getFontSize(16), fontWeight: "600", color: darkMode ? "#E8F0F8" : Colors.DGREY, marginTop: 4 }}>
-                            Cantidad: {lastAddedItem?.quantity || 0}
+                            Cantidad: {formatQuantity(lastAddedItem?.quantity || 0)}
                         </Text>
                     </View>
                 )}
@@ -280,7 +287,7 @@ export default function CartScreen({ jumpTo, isActive = false, darkMode = false 
                 {(cartItems?.length > 0 || lastAddedItem) ? (
                     <FlatList
                         data={cartItems?.length > 0 ? [...cartItems].sort((a, b) => (b._addedAt || 0) - (a._addedAt || 0)) : [lastAddedItem]}
-                        keyExtractor={(item, idx) => `${item.code}_${idx}`}
+                        keyExtractor={(item, idx) => item?._lineId ? String(item._lineId) : `${item.code}_${idx}`}
                         renderItem={({ item }) => <ItemCart item={item} priceClass={account?.priceClass ?? 1} showImage={false} compact={true} darkMode={darkMode} />}
                         ListFooterComponent={<View />}
                         ListFooterComponentStyle={{ height: 120 }}

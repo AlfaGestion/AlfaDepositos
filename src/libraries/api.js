@@ -66,7 +66,6 @@ export const setDataToApi = async (endpoint, payload) => {
 };
 
 export const getDataFromAPI = async (endpoint, payload = null, method = "GET") => {
-  console.log("[API] getDataFromAPI", method, endpoint);
   let TOKEN;
   try {
     TOKEN = await withTimeout(Configuration.getConfigValue("TOKEN"), 5000, "getConfigValue(TOKEN)");
@@ -175,7 +174,6 @@ export const Get = async (uri, token = "") => {
 
     const endpoint = normalizeEndpoint(uri);
     const url = buildUrl(API_URI, endpoint);
-    console.log("[API][GET]", url);
     const response = await fetch(url, {
       method: "GET",
       headers: headers,
@@ -184,8 +182,7 @@ export const Get = async (uri, token = "") => {
       const alt = toggleTrailingSlash(endpoint);
       if (alt !== endpoint) {
         const altUrl = buildUrl(API_URI, alt);
-        console.log("[API][GET][retry]", altUrl);
-        const retry = await fetch(altUrl, { method: "GET", headers });
+         const retry = await fetch(altUrl, { method: "GET", headers });
         const retryData = await retry.json();
         return retryData;
       }

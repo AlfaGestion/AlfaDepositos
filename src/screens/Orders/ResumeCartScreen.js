@@ -20,6 +20,12 @@ export default function ResumeCartScreen({ jumpTo, darkMode = false }) {
             maximumFractionDigits: 2,
         }).format(num);
     };
+    const formatQuantity = (value) => {
+        const num = Number.parseFloat(value);
+        if (!Number.isFinite(num)) return "0";
+        if (Number.isInteger(num)) return String(num);
+        return num.toFixed(3);
+    };
 
     const handleSaveOrder = () => {
         Alert.alert(
@@ -91,7 +97,7 @@ export default function ResumeCartScreen({ jumpTo, darkMode = false }) {
                         />
                     </View>
                 }
-                keyExtractor={(item) => item.code + ""}
+                keyExtractor={(item, idx) => item?._lineId ? String(item._lineId) : `${item.code}_${idx}`}
                 renderItem={({ item }) => <ItemResumeCart item={item} darkMode={darkMode} />}
             />
 
@@ -107,7 +113,7 @@ export default function ResumeCartScreen({ jumpTo, darkMode = false }) {
                             </View>
                             <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", paddingTop: 4 }}>
                                 <Text style={{ fontSize: getFontSize(18), fontWeight: "bold", color: darkMode ? "#E8F0F8" : Colors.DGREY }}>CANTIDAD TOTAL</Text>
-                                <Text style={{ fontSize: getFontSize(18), fontWeight: "bold", color: darkMode ? "#E8F0F8" : Colors.DGREY }}>{getTotalItems()}</Text>
+                                <Text style={{ fontSize: getFontSize(18), fontWeight: "bold", color: darkMode ? "#E8F0F8" : Colors.DGREY }}>{formatQuantity(getTotalItems())}</Text>
                             </View>
                         </>
                     ) : (

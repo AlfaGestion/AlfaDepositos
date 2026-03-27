@@ -96,6 +96,8 @@ export default function SyncScreen({ navigation, route }) {
           "ALFA_DATABASE_ID",
         ]);
         for (const item of data.data) {
+          const itemKey = String(item.key ?? "").trim();
+          const itemKeyUpper = itemKey.toUpperCase();
           if (protectedKeys.has(item.key)) {
             const currentValue = await Configuration.getConfigValue(item.key);
             if (currentValue !== null && currentValue !== undefined && currentValue !== "") {
@@ -103,6 +105,16 @@ export default function SyncScreen({ navigation, route }) {
             }
           }
           await Configuration.setConfigValue(item.key, item.value);
+          if (itemKeyUpper === "TIPOEAN") {
+            await Configuration.setConfigValue("CodPesable", item.value);
+            await Configuration.setConfigValue("CfgCodPesable", item.value);
+            console.log("[SYNC][config] TipoEan:", item.value);
+          }
+          if (itemKeyUpper === "DECIMALESEAN") {
+            await Configuration.setConfigValue("DecimalesEan", item.value);
+            await Configuration.setConfigValue("cfgDecimalesEan", item.value);
+            console.log("[SYNC][config] DecimalesEan:", item.value);
+          }
         }
         updateStatus("configuration");
       } else {
