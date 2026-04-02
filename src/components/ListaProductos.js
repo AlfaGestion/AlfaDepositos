@@ -101,7 +101,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
     const getWeightedQuantityFromScan = (mode, decimals, rawValue, product) => {
         const value = parseInt(String(rawValue ?? ""), 10);
         if (!Number.isFinite(value)) return null;
-        const divisor = Math.pow(10, Math.max(0, decimals || 0));
+        const divisor = Math.pow(10, Math.max(0, Number(decimals) || 0) + 1);
         const parsedValue = divisor > 0 ? value / divisor : value;
 
         if (mode === "P" || mode === "Q") {
@@ -170,7 +170,6 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                 lookupCode: maskedCode.slice(1, 6),
                 valueDigits: maskedCode.slice(6, 12),
                 valueMode: "P",
-                forceDivisor: 1000,
             };
             console.log("[EAN] parse especial", { code, mask, ...specialParsed });
             return specialParsed;
@@ -209,16 +208,13 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
         }
 
         const selected = candidates[0];
-        const qtyOverride = parsed.forceDivisor
-            ? (parseInt(String(parsed.valueDigits ?? ""), 10) || 0) / parsed.forceDivisor
-            : getWeightedQuantityFromScan(parsed.valueMode, cfgDecimalesEan, parsed.valueDigits, selected);
+        const qtyOverride = getWeightedQuantityFromScan(parsed.valueMode, cfgDecimalesEan, parsed.valueDigits, selected);
         console.log("[EAN] resuelto", {
             scanned: rawCode,
             lookupCode: parsed.lookupCode,
             mode: parsed.valueMode,
             valueDigits: parsed.valueDigits,
             decimales: cfgDecimalesEan,
-            forceDivisor: parsed.forceDivisor || null,
             qtyOverride,
             product: selected?.code,
         });
