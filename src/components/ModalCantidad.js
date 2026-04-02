@@ -118,7 +118,7 @@ export default function ModalCantidad(props) {
 
   const validateStock = (text) => {
 
-    const cant = text != "" ? parseFloat(text) : 0
+    const cant = text != "" ? parseFloat(String(text).replace(",", ".")) : 0
 
     // if (netInfo.isConnected) {
     if (config.bloqueaStockRealNegativo == "1" || config.bloqueaStockComprometidoNegativo == "1") {
@@ -198,7 +198,7 @@ export default function ModalCantidad(props) {
                 // ref={inputRef}
                 style={[cModalQtyStyles.inputQty, darkMode && { backgroundColor: "#0F1720", borderColor: "#2D4154", color: "#E8F0F8" }]}
                 onChangeText={(text) => validateStock(text)}
-                keyboardType="number-pad"
+                keyboardType="decimal-pad"
                 editable={!isLoading}
               />
               <Text style={[cModalQtyStyles.textSmall, darkMode && { color: "#9CB2C8" }]}>Si no se informa se toma 1</Text>
@@ -230,7 +230,7 @@ export default function ModalCantidad(props) {
                   // defaultValue={productSelected.price + ""}
                   style={[cModalQtyStyles.inputQty, darkMode && { backgroundColor: "#0F1720", borderColor: "#2D4154", color: "#E8F0F8" }]}
                   onChangeText={(text) => setPriceProduct(text)}
-                  keyboardType="number-pad"
+                  keyboardType="decimal-pad"
                   editable={!isLoading}
                 />
               </View>

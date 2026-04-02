@@ -45,6 +45,10 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
     const refInput = useRef();
     const scanningRef = useRef(false);
     const normalize = (c) => String(c ?? "").replace(/[^0-9a-z]/gi, "");
+    const parsePositiveDecimal = (value, fallback = 0) => {
+        const parsed = parseFloat(String(value ?? "").trim().replace(",", "."));
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    };
     const promoteProduct = (product) => {
         if (!product) return;
         setProductsSearch((prev) => {
@@ -120,10 +124,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
     const parseWeightedCodeByMask = (rawCode) => {
         let code = String(rawCode ?? "").trim();
         const mask = String(CfgCodPesable ?? "").trim().toUpperCase();
-        if (mask && code.length === mask.length && mask.startsWith("0")) {
-            code = `0${code}`;
-            console.log("[EAN] normalizado UPC/EAN", { rawCode, normalizedCode: code, mask });
-        } else if (mask && code.length === mask.length - 1 && mask.startsWith("0") && !code.startsWith("0")) {
+        if (mask && code.length === mask.length - 1 && mask.startsWith("0") && !code.startsWith("0")) {
             code = `0${code}`;
             console.log("[EAN] normalizado con cero inicial", { rawCode, normalizedCode: code, mask });
         }
@@ -131,7 +132,6 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
             console.log("[EAN] invalido", { code, mask });
             return null;
         }
-
         const maskedCode = code.slice(0, mask.length);
 
         let lookupCode = "";
@@ -185,49 +185,62 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
     };
 
     const resolveScannedProduct = async (code, useFallback = true) => {
-        let product = await findProductByCode(code, useFallback);
-        if (product && product.length > 0) {
-            console.log("[EAN] match directo", { scanned: code, found: product[0]?.code });
-            return { products: product, qtyOverride: null, lookupCode: code };
-        }
-
         const rawCode = String(code ?? "").trim();
-        const parsed = parseWeightedCodeByMask(rawCode);
-        if (!parsed) {
-            console.log("[EAN] no parseado como pesable", { scanned: rawCode, cfg: CfgCodPesable, decimales: cfgDecimalesEan });
-            return { products: [], qtyOverride: null, lookupCode: code };
+        const codeVariants = Array.from(new Set([
+            rawCode,
+            (/^[0-9]+$/.test(rawCode) && !rawCode.startsWith("0")) ? `0${rawCode}` : null,
+        ].filter(Boolean)));
+
+        for (const candidateCode of codeVariants) {
+            const product = await findProductByCode(candidateCode, useFallback);
+            if (product && product.length > 0) {
+                console.log("[EAN] match directo", { scanned: rawCode, candidateCode, found: product[0]?.code });
+                return { products: product, qtyOverride: null, lookupCode: candidateCode };
+            }
         }
 
-        let candidates = await withTimeout(Product.findByCode(parsed.lookupCode, lista), "findByCode(mask)", 12000);
-        if ((!candidates || candidates.length === 0) && lista) {
-            candidates = await withTimeout(Product.findByCode(parsed.lookupCode, ""), "findByCode(mask)", 12000);
-        }
-        if (!candidates || candidates.length === 0) {
-            console.log("[EAN] articulo no encontrado", { scanned: rawCode, lookupCode: parsed.lookupCode, lista });
-            return { products: [], qtyOverride: null, lookupCode: code };
+        for (const candidateCode of codeVariants) {
+            const parsed = parseWeightedCodeByMask(candidateCode);
+            if (!parsed) {
+                console.log("[EAN] no parseado como pesable", { scanned: rawCode, candidateCode, cfg: CfgCodPesable, decimales: cfgDecimalesEan });
+                continue;
+            }
+
+            let candidates = await withTimeout(Product.findByCode(parsed.lookupCode, lista), "findByCode(mask)", 12000);
+            if ((!candidates || candidates.length === 0) && lista) {
+                candidates = await withTimeout(Product.findByCode(parsed.lookupCode, ""), "findByCode(mask)", 12000);
+            }
+            if (!candidates || candidates.length === 0) {
+                console.log("[EAN] articulo no encontrado", { scanned: rawCode, candidateCode, lookupCode: parsed.lookupCode, lista });
+                continue;
+            }
+
+            const selected = candidates[0];
+            const qtyOverride = getWeightedQuantityFromScan(parsed.valueMode, cfgDecimalesEan, parsed.valueDigits, selected);
+            console.log("[EAN] resuelto", {
+                scanned: rawCode,
+                candidateCode,
+                lookupCode: parsed.lookupCode,
+                mode: parsed.valueMode,
+                valueDigits: parsed.valueDigits,
+                decimales: cfgDecimalesEan,
+                qtyOverride,
+                product: selected?.code,
+            });
+
+            return {
+                products: [selected],
+                qtyOverride: qtyOverride && qtyOverride > 0 ? qtyOverride : null,
+                lookupCode: parsed.lookupCode,
+            };
         }
 
-        const selected = candidates[0];
-        const qtyOverride = getWeightedQuantityFromScan(parsed.valueMode, cfgDecimalesEan, parsed.valueDigits, selected);
-        console.log("[EAN] resuelto", {
-            scanned: rawCode,
-            lookupCode: parsed.lookupCode,
-            mode: parsed.valueMode,
-            valueDigits: parsed.valueDigits,
-            decimales: cfgDecimalesEan,
-            qtyOverride,
-            product: selected?.code,
-        });
-
-        return {
-            products: [selected],
-            qtyOverride: qtyOverride && qtyOverride > 0 ? qtyOverride : null,
-            lookupCode: parsed.lookupCode,
-        };
+        return { products: [], qtyOverride: null, lookupCode: rawCode };
     };
 
     // 2. Función unificada de búsqueda por código (para Enter y para Escáner)
     const findProductByCode = async (code, useFallback = true) => {
+        const normalizeCodeField = (value) => String(value ?? "").trim().toLowerCase().replace(/\s+/g, "").replace(/[^0-9a-z]/gi, "");
         // Intentamos buscar por codigoBarras primero o code
         let product = await withTimeout(Product.findByCode(code, lista), "findByCode", 12000);
         if ((!product || product.length === 0) && lista) {
@@ -235,13 +248,23 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
         }
         if (useFallback && (!product || product.length === 0) && code) {
             const raw = String(code ?? "").trim();
-            const isNumeric = /^[0-9]+$/.test(raw);
-            if (isNumeric) {
-                product = await withTimeout(Product.findLikeName(raw, effectivePriceClass, 1, lista), "findLikeName");
-                if ((!product || product.length === 0) && lista) {
-                    product = await withTimeout(Product.findLikeName(raw, effectivePriceClass, 1, ""), "findLikeName");
-                }
+            const normalizedRaw = normalizeCodeField(raw);
+            let candidates = await withTimeout(Product.findLikeName(raw, effectivePriceClass, 20, lista), "findLikeName");
+            if ((!candidates || candidates.length === 0) && lista) {
+                candidates = await withTimeout(Product.findLikeName(raw, effectivePriceClass, 20, ""), "findLikeName");
             }
+            product = (candidates || []).filter((item) =>
+                [
+                    item?.code,
+                    item?.id,
+                    item?.codigoBarras,
+                    item?.codigoBarra1,
+                    item?.codigoBarra2,
+                    item?.codigoBarra3,
+                    item?.codigoBarra4,
+                    item?.codigoBarraDun,
+                ].some((value) => normalizeCodeField(value) === normalizedRaw)
+            );
         }
         return product;
     };
@@ -604,8 +627,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
         lastSearchTriggerRef.current = searchTrigger;
         const code = String(searchCode ?? "").trim();
         if (code) {
-            const qty = parseInt(searchQuantity, 10);
-            const normalizedQty = Number.isFinite(qty) && qty > 0 ? qty : 1;
+            const normalizedQty = parsePositiveDecimal(searchQuantity, 1);
             setManualSelectedQty(normalizedQty);
             searchByCode(code, true, normalizedQty);
         }
@@ -726,7 +748,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                     <CameraView
                         onBarcodeScanned={scannerVisible ? handleBarCodeScanned : undefined}
                         barcodeScannerSettings={{
-                            barcodeTypes: ["ean13", "ean8", "code128", "code39", "code93", "qr"],
+                            barcodeTypes: ["ean13", "ean8", "upc_a", "upc_e", "code128", "code39", "code93", "qr"],
                         }}
                         style={StyleSheet.absoluteFillObject}
                     />
@@ -753,7 +775,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                         <TextInput
                             value={scannedQty}
                             onChangeText={setScannedQty}
-                            keyboardType="number-pad"
+                            keyboardType="decimal-pad"
                             style={styles.scanInput}
                         />
                         <TouchableOpacity style={styles.scanPrimaryBtn} onPress={addPendingScan}>

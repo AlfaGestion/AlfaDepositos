@@ -127,7 +127,7 @@ export default function CartScreen({ jumpTo, isActive = false, darkMode = false 
                     ref={qtyInputRef}
                     value={qtyInput}
                     onChangeText={setQtyInput}
-                    keyboardType="number-pad"
+                    keyboardType="decimal-pad"
                     returnKeyType="next"
                     onSubmitEditing={() => codeInputRef.current?.focus?.()}
                     style={{

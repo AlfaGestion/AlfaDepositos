@@ -117,7 +117,7 @@ export default function ModalItem({ isVisible, setIsVisible, item, isNew = false
                         autoFocus={isVisible}
                         style={{ width: "100%", borderColor: darkMode ? "#2D4154" : Colors.BORDER, fontSize: getFontSize(16), borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: darkMode ? "#0F1720" : "#F8FAFC", color: darkMode ? "#E8F0F8" : "#1B1B1B" }}
                         onChangeText={(text) => setQuantity(text)}
-                        keyboardType="number-pad"
+                        keyboardType="decimal-pad"
                         value={quantity}
                     // defaultValue={quantity}
                     // editable={!isLoading}
@@ -152,7 +152,7 @@ export default function ModalItem({ isVisible, setIsVisible, item, isNew = false
                             // defaultValue={price}
                             style={{ width: "100%", borderColor: darkMode ? "#2D4154" : Colors.BORDER, fontSize: getFontSize(16), borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: darkMode ? "#0F1720" : "#F8FAFC", color: darkMode ? "#E8F0F8" : "#1B1B1B" }}
                             onChangeText={(text) => setPrice(text)}
-                            keyboardType="number-pad"
+                            keyboardType="decimal-pad"
                         // editable={!isLoading}
                         />
                     </View>

@@ -85,6 +85,11 @@ export const CartProvider = ({ children }) => {
 
     }, [globalPriceClass])
 
+    const parseDecimalValue = (value, fallback = 0) => {
+        const parsed = parseFloat(String(value ?? "").trim().replace(",", "."));
+        return Number.isFinite(parsed) ? parsed : fallback;
+    }
+
     const loadConfiguration = async () => {
         const cargaImagenes = await Configuration.getConfig("CARGA_IMAGENES");
         const noPermiteItemDuplicado = await Configuration.getConfigValue("NO_PERMITE_ITEMS_DUPLICADOS_CPTE") == 1
@@ -450,13 +455,14 @@ export const CartProvider = ({ children }) => {
         setCartItems((prevItems) => {
             const existingProduct = prevItems.find(item => item.id === product.id);
             const addedAt = Date.now();
-            const normalizedQty = parseFloat(quantity) || 1;
+            const normalizedQty = parseDecimalValue(quantity, 1) || 1;
 
             let actualPrice = 0;
+            const normalizedNewPrice = parseDecimalValue(newPrice, 0);
 
-            if (newPrice > 0) {
-                actualPrice = newPrice
-                product[`${`${priceClassSelected}`?.length < 3 ? ('price' + priceClassSelected) : priceClassSelected}`] = newPrice
+            if (normalizedNewPrice > 0) {
+                actualPrice = normalizedNewPrice
+                product[`${`${priceClassSelected}`?.length < 3 ? ('price' + priceClassSelected) : priceClassSelected}`] = normalizedNewPrice
             } else {
                 actualPrice = product[priceClassSelected]
             }
@@ -481,7 +487,7 @@ export const CartProvider = ({ children }) => {
                             bultos: bultos > 0 ? bultos : parseInt(item.bultos),
                             disc: disc == 0 ? product.disc : 0,
                             priceWithDiscount: priceWithDiscount,
-                            quantity: sumProductToExisting ? (normalizedQty > 1 ? normalizedQty : parseFloat(item.quantity) + 1) : (parseFloat(item?.quantity) + normalizedQty),
+                            quantity: sumProductToExisting ? (normalizedQty > 1 ? normalizedQty : parseDecimalValue(item.quantity, 0) + 1) : (parseDecimalValue(item?.quantity, 0) + normalizedQty),
                             _addedAt: addedAt
                         }  // Aumentamos la cantidad
                         : item
@@ -503,10 +509,10 @@ export const CartProvider = ({ children }) => {
 
             for (const entry of items) {
                 const product = entry.product;
-                const qty = parseFloat(entry.qty) || 1;
+                const qty = parseDecimalValue(entry.qty, 1) || 1;
                 const disc = entry.disc || 0;
                 const bultos = entry.bultos || 0;
-                const newPrice = entry.newPrice || 0;
+                const newPrice = parseDecimalValue(entry.newPrice, 0);
                 const separateLine = entry.separateLine === true;
 
                 let actualPrice = 0;
@@ -531,7 +537,7 @@ export const CartProvider = ({ children }) => {
                         bultos: bultos > 0 ? bultos : parseInt(item.bultos),
                         disc: disc == 0 ? item.disc : 0,
                         priceWithDiscount: itemPriceWithDiscount,
-                        quantity: parseFloat(item.quantity) + qty,
+                        quantity: parseDecimalValue(item.quantity, 0) + qty,
                         _addedAt: Date.now()
                     };
                 } else {
