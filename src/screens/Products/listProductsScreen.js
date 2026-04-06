@@ -25,12 +25,17 @@ import iconProduct from "@icons/articulos.png";
 import iconProductDark from "@icons/articulos_b.png";
 
 export default function Products({ navigation }) {
+  const PAGE_SIZE = 50;
   const [products, setProducts] = useState([]);
   const [empty, setEmpty] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
   const [loadImages, setLoadImages] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [productsLimit, setProductsLimit] = useState(PAGE_SIZE);
+  const [hasMoreProducts, setHasMoreProducts] = useState(false);
+  const [cfgCodPesable, setCfgCodPesable] = useState("");
+  const [cfgDecimalesEan, setCfgDecimalesEan] = useState(0);
   const { darkMode } = useThemeConfig();
 
   const [permission, requestPermission] = useCameraPermissions();
@@ -41,7 +46,7 @@ export default function Products({ navigation }) {
 
   useEffect(() => {
     loadConfiguration();
-    loadProducts("", false);
+    loadProducts("", false, PAGE_SIZE);
   }, []);
 
   useLayoutEffect(() => {
@@ -56,33 +61,158 @@ export default function Products({ navigation }) {
     try {
       await Configuration.createTable();
       const imagesValue = await Configuration.getConfigValue("CARGA_IMAGENES");
+      const codPesableCfg = await Configuration.getConfigValue("CfgCodPesable");
+      const codPesableLegacy = await Configuration.getConfigValue("CodPesable");
+      const decimalesCfg = await Configuration.getConfigValue("cfgDecimalesEan");
+      const decimalesLegacy = await Configuration.getConfigValue("DecimalesEan");
       setLoadImages(imagesValue == "1");
+      setCfgCodPesable(String(codPesableCfg || codPesableLegacy || "").trim().toUpperCase());
+      setCfgDecimalesEan(Math.max(0, parseInt(decimalesCfg || decimalesLegacy, 10) || 0));
     } catch (e) {
       setLoadImages(false);
+      setCfgCodPesable("");
+      setCfgDecimalesEan(0);
     }
   };
 
-  const loadProducts = async (text = "", isSearch = false) => {
+  const getWeightedQuantityFromScan = (mode, decimals, rawValue, product) => {
+    const value = parseInt(String(rawValue ?? ""), 10);
+    if (!Number.isFinite(value)) return null;
+    const divisor = Math.pow(10, Math.max(0, Number(decimals) || 0) + 1);
+    const parsedValue = divisor > 0 ? value / divisor : value;
+
+    if (mode === "P" || mode === "Q") {
+      return parsedValue;
+    }
+
+    if (mode === "T") {
+      const unitPrice = parseFloat(product?.price1 ?? 0);
+      if (!unitPrice) return null;
+      return parsedValue / unitPrice;
+    }
+
+    return null;
+  };
+
+  const parseWeightedCodeByMask = (rawCode) => {
+    let code = String(rawCode ?? "").trim();
+    const mask = String(cfgCodPesable ?? "").trim().toUpperCase();
+    if (mask && code.length === mask.length - 1 && mask.startsWith("0") && !code.startsWith("0")) {
+      code = `0${code}`;
+    }
+    if (!code || !mask || code.length < mask.length) {
+      return null;
+    }
+
+    const maskedCode = code.slice(0, mask.length);
+    let lookupCode = "";
+    let valueDigits = "";
+    let valueMode = "";
+
+    for (let i = 0; i < mask.length; i++) {
+      const maskChar = mask[i];
+      const codeChar = maskedCode[i];
+
+      if (["C", "P", "Q", "T"].includes(maskChar)) {
+        if (maskChar === "C") {
+          lookupCode += codeChar;
+        } else {
+          valueDigits += codeChar;
+          if (!valueMode) valueMode = maskChar;
+        }
+        continue;
+      }
+
+      if (maskChar !== codeChar) {
+        return null;
+      }
+    }
+
+    if (!lookupCode) {
+      return null;
+    }
+
+    if (mask === "0CCCCCPPPPPP") {
+      return {
+        lookupCode: maskedCode.slice(1, 6),
+        valueDigits: maskedCode.slice(6, 12),
+        valueMode: "P",
+      };
+    }
+
+    return { lookupCode, valueDigits, valueMode };
+  };
+
+  const findProductsByScannedCode = async (rawValue) => {
+    const rawCode = String(rawValue ?? "").trim();
+    const mask = String(cfgCodPesable ?? "").trim().toUpperCase();
+    const codeVariants = Array.from(new Set([
+      rawCode,
+      (/^[0-9]+$/.test(rawCode) && !rawCode.startsWith("0")) ? `0${rawCode}` : null,
+      (/^[0-9]+$/.test(rawCode) && mask.startsWith("0") && rawCode.length === Math.max(1, mask.length - 1)) ? `0${rawCode}` : null,
+      (/^[0-9]+$/.test(rawCode) && mask.startsWith("0") && rawCode.length === mask.length) ? `0${rawCode}` : null,
+    ].filter(Boolean)));
+
+    for (const candidateCode of codeVariants) {
+      const data = await Product.findByCode(candidateCode, "");
+      if (data && data.length > 0) {
+        return { data, resolvedCode: candidateCode, qtyOverride: null };
+      }
+    }
+
+    for (const candidateCode of codeVariants) {
+      const parsed = parseWeightedCodeByMask(candidateCode);
+      if (!parsed) continue;
+
+      const lookupVariants = Array.from(new Set([
+        String(parsed.lookupCode ?? "").trim(),
+        String(parsed.lookupCode ?? "").trim().replace(/^0+/, ""),
+      ].filter(Boolean)));
+
+      for (const lookupCode of lookupVariants) {
+        const data = await Product.findByCode(lookupCode, "");
+        if (data && data.length > 0) {
+          const selected = data[0];
+          const qtyOverride = getWeightedQuantityFromScan(parsed.valueMode, cfgDecimalesEan, parsed.valueDigits, selected);
+          return { data, resolvedCode: lookupCode, qtyOverride };
+        }
+      }
+    }
+
+    return { data: [], resolvedCode: rawCode, qtyOverride: null };
+  };
+
+  const loadProducts = async (text = "", isSearch = false, requestedLimit = PAGE_SIZE) => {
     let data = [];
     setIsLoading(true);
     setSearchText(text);
 
     try {
+      const fetchLimit = requestedLimit + 1;
       if (isSearch && text !== "") {
-        data = await Product.findByCode(text, "");
+        const exactMatch = await findProductsByScannedCode(text);
+        data = exactMatch.data;
+        if (exactMatch.resolvedCode !== text) {
+          setSearchText(exactMatch.resolvedCode);
+        }
         if (!data || data.length === 0) {
-          data = await Product.findLikeName(text);
+          data = await Product.findLikeName(text, 1, fetchLimit);
         }
       } else {
-        data = await Product.query({ page: 1, limit: 20 });
+        data = await Product.query({ page: 1, limit: fetchLimit });
       }
 
       if (!data || data.length === 0) {
         setEmpty(true);
         setProducts([]);
+        setHasMoreProducts(false);
+        setProductsLimit(requestedLimit);
       } else {
+        const visibleProducts = data.slice(0, requestedLimit);
         setEmpty(false);
-        setProducts(data);
+        setProducts(visibleProducts);
+        setHasMoreProducts(data.length > requestedLimit);
+        setProductsLimit(requestedLimit);
       }
     } catch (error) {
       console.error("Error cargando productos:", error);
@@ -90,9 +220,11 @@ export default function Products({ navigation }) {
       setProducts([]);
       setEmpty(false);
       setSearchText("");
+      setHasMoreProducts(false);
+      setProductsLimit(PAGE_SIZE);
       setRefreshKey((k) => k + 1);
       setTimeout(() => {
-        loadProducts("", false);
+        loadProducts("", false, PAGE_SIZE);
       }, 0);
     } finally {
       setIsLoading(false);
@@ -125,10 +257,15 @@ export default function Products({ navigation }) {
   const onChangeSearchText = (text) => {
     setSearchText(text);
     if (text.length === 0) {
-      loadProducts("", false);
+      loadProducts("", false, PAGE_SIZE);
       return;
     }
-    loadProducts(text, true);
+    loadProducts(text, true, PAGE_SIZE);
+  };
+
+  const handleLoadMoreProducts = () => {
+    if (isLoading || !hasMoreProducts) return;
+    loadProducts(searchText, searchText.length > 0, productsLimit + PAGE_SIZE);
   };
 
   return (
@@ -200,15 +337,24 @@ export default function Products({ navigation }) {
       ) : empty ? (
         <View style={styles.emptyContainer}>
           <Text style={[listProductsStyles.emptyText, darkMode && { color: "#E8F0F8" }]}>No se encontraron resultados.</Text>
-          <TouchableOpacity onPress={() => loadProducts("", false)}>
+          <TouchableOpacity onPress={() => loadProducts("", false, PAGE_SIZE)}>
             <Text style={{ color: darkMode ? "#8FC3FF" : Colors.DBLUE, marginTop: 15 }}>Ver todos los productos</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <FlatList
           style={{ backgroundColor: darkMode ? "#0F1720" : "#E7F1F9" }}
-          ListFooterComponent={<View />}
-          ListFooterComponentStyle={{ height: 100 }}
+          onEndReached={() => {
+            handleLoadMoreProducts();
+          }}
+          onEndReachedThreshold={0.35}
+          ListFooterComponent={hasMoreProducts ? (
+            <View style={styles.loadMoreIndicator}>
+              <ActivityIndicator size="small" color={darkMode ? "#8FC3FF" : Colors.DBLUE} />
+              <Text style={styles.loadMoreHint(darkMode)}>Cargando mas articulos...</Text>
+            </View>
+          ) : <View />}
+          ListFooterComponentStyle={{ height: hasMoreProducts ? 90 : 100 }}
           data={products}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
@@ -308,4 +454,14 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "transparent",
   },
+  loadMoreIndicator: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+  },
+  loadMoreHint: (darkMode) => ({
+    color: darkMode ? "#8FC3FF" : Colors.DBLUE,
+    fontWeight: "600",
+    marginTop: 8,
+  }),
 });

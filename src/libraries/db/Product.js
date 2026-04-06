@@ -51,14 +51,14 @@ export default class Product extends BaseModel {
     let sql;
     if (lista == '' || lista == null || lista == undefined) {
       sql = `Select cant_propuesta,code, codigoBarras, codigoBarra1, codigoBarra2, codigoBarra3, codigoBarra4, codigoBarraDun, name, id, price${classPrice} from products 
-    where (lower(name) like ? or lower(code) like ? or lower(cast(id as text)) like ? or lower(codigoBarras) like ? or lower(codigoBarra1) like ? or lower(codigoBarra2) like ? or lower(codigoBarra3) like ? or lower(codigoBarra4) like ? or lower(codigoBarraDun) like ?) 
+    where (lower(name) like ? or lower(code) like ? or lower(codigoBarras) like ? or lower(codigoBarra1) like ? or lower(codigoBarra2) like ? or lower(codigoBarra3) like ? or lower(codigoBarra4) like ? or lower(codigoBarraDun) like ?) 
     order by name ASC limit ${limit} offset ${(page - 1) * limit}`;
     } else {
       sql = `Select cant_propuesta,code, codigoBarras, codigoBarra1, codigoBarra2, codigoBarra3, codigoBarra4, codigoBarraDun, name, id, price${classPrice} from products_listas 
-    where lista='${lista}' and (lower(name) like ? or lower(code) like ? or lower(cast(id as text)) like ? or lower(codigoBarras) like ? or lower(codigoBarra1) like ? or lower(codigoBarra2) like ? or lower(codigoBarra3) like ? or lower(codigoBarra4) like ? or lower(codigoBarraDun) like ?) 
+    where lista='${lista}' and (lower(name) like ? or lower(code) like ? or lower(codigoBarras) like ? or lower(codigoBarra1) like ? or lower(codigoBarra2) like ? or lower(codigoBarra3) like ? or lower(codigoBarra4) like ? or lower(codigoBarraDun) like ?) 
     order by name ASC limit ${limit} offset ${(page - 1) * limit}`;
     }
-    return await this.repository.databaseLayer.executeSql(sql, [searchLike, searchLike, searchLike, searchLike, searchLike, searchLike, searchLike, searchLike, searchLike]).then(({ rows }) => rows);
+    return await this.repository.databaseLayer.executeSql(sql, [searchLike, searchLike, searchLike, searchLike, searchLike, searchLike, searchLike, searchLike]).then(({ rows }) => rows);
   }
 
   static async findByCode(code, lista = '') {
@@ -71,7 +71,7 @@ export default class Product extends BaseModel {
 
     const select = `SELECT cant_propuesta, code, codigoBarras, codigoBarra1, codigoBarra2, codigoBarra3, codigoBarra4, codigoBarraDun, name, id, price1, price2, price3, price4, price5, price6, price7, price8, price9, price10`;
     const barcodeWhere = `(
-      lower(trim(code)) = ? OR lower(replace(trim(code), ' ', '')) = ? OR trim(cast(id as text)) = ? OR
+      lower(trim(code)) = ? OR lower(replace(trim(code), ' ', '')) = ? OR
       lower(trim(codigoBarras)) = ? OR lower(replace(trim(codigoBarras), ' ', '')) = ? OR
       lower(trim(codigoBarra1)) = ? OR lower(replace(trim(codigoBarra1), ' ', '')) = ? OR
       lower(trim(codigoBarra2)) = ? OR lower(replace(trim(codigoBarra2), ' ', '')) = ? OR
@@ -87,7 +87,7 @@ export default class Product extends BaseModel {
         WHERE lista=? AND ${barcodeWhere}
         ORDER BY name ASC LIMIT 1`;
 
-      let rowsListas = await this.repository.databaseLayer.executeSql(sqlListas, [lista, searchCodeLower, normalizedCodeLower, searchCode, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower]).then(({ rows }) => rows);
+      let rowsListas = await this.repository.databaseLayer.executeSql(sqlListas, [lista, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower]).then(({ rows }) => rows);
       if (rowsListas && rowsListas.length > 0) {
         return rowsListas;
       }
@@ -118,7 +118,7 @@ export default class Product extends BaseModel {
       WHERE ${barcodeWhere}
       ORDER BY name ASC LIMIT 1`;
 
-    let rows = await this.repository.databaseLayer.executeSql(sql, [searchCodeLower, normalizedCodeLower, searchCode, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower]).then(({ rows }) => rows);
+    let rows = await this.repository.databaseLayer.executeSql(sql, [searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower, searchCodeLower, normalizedCodeLower]).then(({ rows }) => rows);
     if (rows && rows.length > 0) {
       return rows;
     }

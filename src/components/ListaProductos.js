@@ -15,6 +15,7 @@ import ItemCart from "./Cart/ItemCart";
 import ModalItem from "./Cart/ModalItem";
 
 export default function ListaProductos({ priceClassSelected = 1, lista = '', scanTrigger = 0, searchTrigger = 0, searchCode = "", searchQuantity = 1, autoAddOnManualSearch = false, hideList = false, autoAddOnScan = false, scanQuantity = 1, onAutoAdd, showSearchCamera = true, searchAutoFocus = true, fillHeight = true, showFooter = true, listCompact = false, isActive = true, darkMode = false }) {
+    const PAGE_SIZE = 50;
     const { passValidations, addManyToCart, noPermiteDuplicarItem, cartItems } = useCart();
     const effectivePriceClass = priceClassSelected || 1;
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -31,6 +32,8 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
     const [item, setItem] = useState(null);
     const [defaultProducts, setDefaultProducts] = useState([]);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [productsLimit, setProductsLimit] = useState(PAGE_SIZE);
+    const [hasMoreProducts, setHasMoreProducts] = useState(false);
     const [pendingScans, setPendingScans] = useState([]);
     const [scanModalVisible, setScanModalVisible] = useState(false);
     const [scannedCode, setScannedCode] = useState("");
@@ -97,7 +100,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                 // seguimos igual para no bloquear la UI
             }
             setDefaultProducts([]);
-            loadProducts("");
+            loadProducts("", PAGE_SIZE);
         };
         init();
     }, [effectivePriceClass, lista]);
@@ -186,9 +189,12 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
 
     const resolveScannedProduct = async (code, useFallback = true) => {
         const rawCode = String(code ?? "").trim();
+        const mask = String(CfgCodPesable ?? "").trim().toUpperCase();
         const codeVariants = Array.from(new Set([
             rawCode,
             (/^[0-9]+$/.test(rawCode) && !rawCode.startsWith("0")) ? `0${rawCode}` : null,
+            (/^[0-9]+$/.test(rawCode) && mask.startsWith("0") && rawCode.length === Math.max(1, mask.length - 1)) ? `0${rawCode}` : null,
+            (/^[0-9]+$/.test(rawCode) && mask.startsWith("0") && rawCode.length === mask.length) ? `0${rawCode}` : null,
         ].filter(Boolean)));
 
         for (const candidateCode of codeVariants) {
@@ -206,12 +212,26 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                 continue;
             }
 
-            let candidates = await withTimeout(Product.findByCode(parsed.lookupCode, lista), "findByCode(mask)", 12000);
-            if ((!candidates || candidates.length === 0) && lista) {
-                candidates = await withTimeout(Product.findByCode(parsed.lookupCode, ""), "findByCode(mask)", 12000);
+            const lookupVariants = Array.from(new Set([
+                String(parsed.lookupCode ?? "").trim(),
+                String(parsed.lookupCode ?? "").trim().replace(/^0+/, ""),
+            ].filter(Boolean)));
+
+            let candidates = [];
+            let resolvedLookupCode = parsed.lookupCode;
+            for (const lookupCode of lookupVariants) {
+                candidates = await withTimeout(Product.findByCode(lookupCode, lista), "findByCode(mask)", 12000);
+                if ((!candidates || candidates.length === 0) && lista) {
+                    candidates = await withTimeout(Product.findByCode(lookupCode, ""), "findByCode(mask)", 12000);
+                }
+                if (candidates && candidates.length > 0) {
+                    resolvedLookupCode = lookupCode;
+                    break;
+                }
             }
+
             if (!candidates || candidates.length === 0) {
-                console.log("[EAN] articulo no encontrado", { scanned: rawCode, candidateCode, lookupCode: parsed.lookupCode, lista });
+                console.log("[EAN] articulo no encontrado", { scanned: rawCode, candidateCode, lookupCode: parsed.lookupCode, lookupVariants, lista });
                 continue;
             }
 
@@ -220,7 +240,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
             console.log("[EAN] resuelto", {
                 scanned: rawCode,
                 candidateCode,
-                lookupCode: parsed.lookupCode,
+                lookupCode: resolvedLookupCode,
                 mode: parsed.valueMode,
                 valueDigits: parsed.valueDigits,
                 decimales: cfgDecimalesEan,
@@ -231,7 +251,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
             return {
                 products: [selected],
                 qtyOverride: qtyOverride && qtyOverride > 0 ? qtyOverride : null,
-                lookupCode: parsed.lookupCode,
+                lookupCode: resolvedLookupCode,
             };
         }
 
@@ -256,7 +276,6 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
             product = (candidates || []).filter((item) =>
                 [
                     item?.code,
-                    item?.id,
                     item?.codigoBarras,
                     item?.codigoBarra1,
                     item?.codigoBarra2,
@@ -639,28 +658,36 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
         }
     }, [isModalVisible]);
 
-    const loadProducts = async (text = "") => {
+    const loadProducts = async (text = "", requestedLimit = PAGE_SIZE) => {
         if (loadingRef.current) return;
         loadingRef.current = true;
         setIsLoading(true);
         setProductSearchText(text);
         try {
             // Respuesta rápida con cache
-            if (text == "" && defaultProducts && defaultProducts.length > 0) {
+            if (text == "" && requestedLimit <= productsLimit && defaultProducts && defaultProducts.length > 0) {
                 setProductsSearch(defaultProducts);
             }
             let products = [];
+            let hasMore = false;
+            const fetchLimit = requestedLimit + 1;
 
             if (text == "") {
                 if (lista) {
-                    products = await withTimeout(Product.findLikeName("", effectivePriceClass, 20, lista), "findLikeName");
+                    products = await withTimeout(Product.findLikeName("", effectivePriceClass, fetchLimit, lista), "findLikeName");
                     if (!products || products.length === 0) {
-                        products = await withTimeout(Product.query({ limit: 20, page: 1 }), "query");
+                        products = await withTimeout(Product.query({ limit: fetchLimit, page: 1 }), "query");
                     }
                 } else {
-                    products = await withTimeout(Product.query({ limit: 20, page: 1 }), "query");
+                    products = await withTimeout(Product.query({ limit: fetchLimit, page: 1 }), "query");
                 }
-                if (!defaultProducts || defaultProducts.length === 0) setDefaultProducts(products || []);
+                hasMore = Array.isArray(products) && products.length > requestedLimit;
+                const visibleProducts = Array.isArray(products) ? products.slice(0, requestedLimit) : [];
+                setProductsLimit(requestedLimit);
+                setHasMoreProducts(hasMore);
+                setProductsSearch(visibleProducts);
+                setDefaultProducts(visibleProducts);
+                return;
             } else {
                 const raw = String(text ?? "").trim();
                 const isNumeric = /^[0-9]+$/.test(raw);
@@ -669,33 +696,43 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                     if (byCode && byCode.length > 0) {
                         products = byCode;
                     } else {
-                        products = await withTimeout(Product.findLikeName(raw, effectivePriceClass, 10, lista), "findLikeName");
+                        products = await withTimeout(Product.findLikeName(raw, effectivePriceClass, fetchLimit, lista), "findLikeName");
                         if ((!products || products.length === 0) && lista) {
-                            products = await withTimeout(Product.findLikeName(raw, effectivePriceClass, 10, ""), "findLikeName");
+                            products = await withTimeout(Product.findLikeName(raw, effectivePriceClass, fetchLimit, ""), "findLikeName");
                         }
                     }
                 } else {
-                    products = await withTimeout(Product.findLikeName(raw, effectivePriceClass, 10, lista), "findLikeName");
+                    products = await withTimeout(Product.findLikeName(raw, effectivePriceClass, fetchLimit, lista), "findLikeName");
                     if ((!products || products.length === 0) && lista) {
-                        products = await withTimeout(Product.findLikeName(raw, effectivePriceClass, 10, ""), "findLikeName");
+                        products = await withTimeout(Product.findLikeName(raw, effectivePriceClass, fetchLimit, ""), "findLikeName");
                     }
                 }
             }
 
-            setProductsSearch(Array.isArray(products) ? products : []);
+            hasMore = Array.isArray(products) && products.length > requestedLimit;
+            setProductsLimit(requestedLimit);
+            setHasMoreProducts(hasMore);
+            setProductsSearch(Array.isArray(products) ? products.slice(0, requestedLimit) : []);
         } catch (e) {
             // Si falla, reiniciamos la pantalla completa
             setProductsSearch([]);
             setProductSearchText("");
             setDefaultProducts([]);
+            setHasMoreProducts(false);
+            setProductsLimit(PAGE_SIZE);
             setRefreshKey((k) => k + 1);
             setTimeout(() => {
-                loadProducts("");
+                loadProducts("", PAGE_SIZE);
             }, 0);
         } finally {
             setIsLoading(false);
             loadingRef.current = false;
         }
+    };
+
+    const handleLoadMoreProducts = () => {
+        if (loadingRef.current || !hasMoreProducts) return;
+        loadProducts(productSearchText, productsLimit + PAGE_SIZE);
     };
 
     const rootStyle = hideList ? null : (fillHeight ? { height: "100%" } : null);
@@ -797,7 +834,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                             style={{ marginVertical: 10, width: "75%", padding: 10, color: darkMode ? "#E8F0F8" : "#1B1B1B" }}
                             placeholder="Descripcion o codigo"
                             placeholderTextColor={darkMode ? "#9CB2C8" : "#7A7A7A"}
-                            onChangeText={(text) => loadProducts(text)}
+                            onChangeText={(text) => loadProducts(text, PAGE_SIZE)}
                             onSubmitEditing={() => searchByCode(productSearchText)}
                             value={productSearchText}
                             clearButtonMode="always"
@@ -805,7 +842,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
 
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                             {productSearchText?.length > 0 && (
-                                <TouchableOpacity onPress={() => loadProducts("")} style={styles.clearBtn}>
+                                <TouchableOpacity onPress={() => loadProducts("", PAGE_SIZE)} style={styles.clearBtn}>
                                     <Text style={{ color: darkMode ? "#E8F0F8" : "#1B1B1B" }}>X</Text>
                                 </TouchableOpacity>
                             )}
@@ -856,6 +893,16 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                             style={{ backgroundColor: darkMode ? "#0F1720" : "#ececec", paddingHorizontal: 10 }}
                             data={productsSearch}
                             keyExtractor={(item) => item.id + ""}
+                            ListFooterComponent={hasMoreProducts ? (
+                                <TouchableOpacity
+                                    onPress={handleLoadMoreProducts}
+                                    style={{ paddingVertical: 14, alignItems: "center" }}
+                                >
+                                    <Text style={{ color: darkMode ? "#8FC3FF" : Colors.DBLUE, fontWeight: "600" }}>
+                                        Ver 50 articulos mas
+                                    </Text>
+                                </TouchableOpacity>
+                            ) : <View style={{ height: 8 }} />}
                             renderItem={({ item }) => (
                                 <ItemCart
                                     priceClass={priceClassSelected}
@@ -870,7 +917,7 @@ export default function ListaProductos({ priceClassSelected = 1, lista = '', sca
                     {(!isLoading && Array.isArray(productsSearch) && productsSearch.length === 0) && (
                         <View style={{ alignItems: "center", marginTop: 20 }}>
                             <Text style={{ color: darkMode ? "#9CB2C8" : Colors.GREY }}>No hay articulos para mostrar.</Text>
-                            <TouchableOpacity onPress={() => loadProducts("")} style={{ marginTop: 10 }}>
+                            <TouchableOpacity onPress={() => loadProducts("", PAGE_SIZE)} style={{ marginTop: 10 }}>
                                 <Text style={{ color: darkMode ? "#8FC3FF" : Colors.DBLUE, fontWeight: "600" }}>Reintentar</Text>
                             </TouchableOpacity>
                         </View>
